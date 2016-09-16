@@ -20,14 +20,15 @@ class AssemblerWrapper(object):
     def run(self):
         # Take the assembly cline made by prep method, and run it
         print 'Assembling'
-        subprocess.call(self.assembly_cline, shell=True)
+        print self.assembly_cline
+        #subprocess.call(self.assembly_cline, shell=True)
         print 'Done!'
 
 
-class IBDA_UD_Wrapper(AssemblerWrapper):
+class IDBAUDWrapper(AssemblerWrapper):
 
     def __init__(self, r1, r2, out_dir):
-        super(IBDA_UD_Wrapper, self).__init__(r1, r2, out_dir)
+        super(IBDAUDWrapper, self).__init__(r1, r2, out_dir)
 
         self.basename = os.path.basename(self.fastq1).split('_R1')[0]
         self.interleaved_fastq = self.basename + "_interleaved.fastq.gz"
@@ -42,7 +43,7 @@ class IBDA_UD_Wrapper(AssemblerWrapper):
         self.assembly_cline = 'idba_ud -r %s -o %s --pre_correction' % (self.fasta, self.out_dir)
 
 
-class SPAdes_Wrapper(AssemblerWrapper):
+class SPAdesWrapper(AssemblerWrapper):
 
     def prep(self):
         self.assembly_cline = "spades.py -1 %s -2 %s -o %s --careful -t 8" % (self.fastq1,
@@ -50,10 +51,10 @@ class SPAdes_Wrapper(AssemblerWrapper):
                                                                               self.out_dir)
 
 
-class Velvet_Wrapper(AssemblerWrapper):
+class VelvetWrapper(AssemblerWrapper):
 
-    def __init__(self, mink = 31, maxk = 151, step = 10):
-        super(Velvet_Wrapper, self).__init__(self, r1, r2, out_dir)
+    def __init__(self, r1, r2, out_dir, mink = 31, maxk = 151, step = 10):
+        super(VelvetWrapper, self).__init__(r1, r2, out_dir)
 
         self.mink = mink
         self.maxk = maxk
@@ -69,7 +70,7 @@ class Velvet_Wrapper(AssemblerWrapper):
                                                                                      velveth_string)
 
 
-class Megahit_Wrapper(AssemblerWrapper):
+class MegahitWrapper(AssemblerWrapper):
 
     def prep(self):
         pass
@@ -118,16 +119,16 @@ if __name__=='__main__':
 
         
     if args.method == 'idba_ud':
-        assembler = IBDA_UD_Wrapper(args.forward, args.reverse, run_dir)
+        assembler = IBDAUDWrapper(args.forward, args.reverse, run_dir)
 
     elif args.method == 'spades':
-        assembler = SPAdes_Wrapper(args.forward, args.reverse, run_dir)
+        assembler = SPAdesWrapper(args.forward, args.reverse, run_dir)
 
     elif args.method == 'megahit':
-        assembler = Megahit_Wrapper(args.forward, args.reverse, run_dir)
+        assembler = MegahitWrapper(args.forward, args.reverse, run_dir)
 
     elif args.method == 'velvet':
-        assembler = Velvet_Wrapper(args.forward, args.reverse, run_dir)
+        assembler = VelvetWrapper(args.forward, args.reverse, run_dir)
 
     assembler.prep()
     assembler.run()
