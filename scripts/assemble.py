@@ -5,9 +5,40 @@ import subprocess
 import os
 import sys
 
-
-
 # Assembly wrapper script. Usage: assemble.py <method> <R1.fastq.gz> <R2.fastq.gz>
+
+class AssemblerWrapper(object):
+
+    def __init__(self, r1, r2, out_dir):
+        self.fastq1 = r1
+        self.fastq2 = r2
+        self.out_dir = out_dir
+
+    def prep(self):
+        pass
+
+    def run(self):
+        print 'Assembling'
+        subprocess.call(self.assembly_cline, shell=True)
+        print 'Done!'
+
+
+class IBDA_UD_Wrapper(AssemblerWrapper):
+
+    def __init__(self, r1, r2, out_dir):
+        super(IBDA_UD_Wrapper, self).__init__(r1, r2, out_dir)
+        self.basename = os.path.basename(self.fastq1).split('_R1')[0]
+        self.interleaved_fastq = self.basename + "_interleaved.fastq.gz"
+        self.fasta = self.basename + "_interleaved.fasta"
+
+    def prep(self, update_fasta = False):
+        # Check whether the interleaved fasta file exists. If not, create it.
+
+        if not os.path.exists(self.fasta):
+            fastq2fasta(self.fastq1, self.fastq2, self.fasta)
+
+        self.assembly_cline = 'idba_ud -r %s -o %s --pre_correction' % (self.fasta, self.out_dir)
+
 
 def zcat_ps(filename):
     # bash command to pipe a gzipped file in place of a regular fastq (using process substitution)
@@ -18,56 +49,15 @@ def zcat_ps(filename):
 
     return '<(%s %s)' % (zcat, filename)
 
-def paste_fq_read(filename):
-    # bash paste command for joining together four lines of fastq
-    return 'paste - - - - < %s' % filename
 
-def interleave_reads_cline(r1, r2, outfile):
-    # Make a bash command line for interleaving paired end fastq files - it's much faster than any
-    # python solution
-    interleave_cline = "paste <(%s) <(%s) | tr '\\t' '\\n' | gzip > %s" % (paste_fq_read( zcat_ps( r1 ) ),
-                                                                           paste_fq_read( zcat_ps( r2 ) ),
-                                                                           outfile)
-    return interleave_cline
+def fastq2fasta(r1, r2, fasta):
 
-def fastq2fasta_cline(fastq, fasta):
-    return 'fq2fa %s %s' % (fastq, fasta)
+    fq2fa_cline = 'fq2fa --merge %s %s %s' % ( zcat_ps( r1 ),
+                                               zcat_ps( r2 ),
+                                               fasta)
+    print "merging reads with '%s'" % fq2fa_cline
 
-def Velvet_cline(r1, r2, mink = 31, maxk = 151, step = 20):
-    pass
-
-def Megahit_cline():
-    pass
-
-def IDBA_UD_cline(fq1, fq2, out_dir):
-    # IDBA requires paired end reads in a single, interleaved fasta file. Check if this exists and create if not.
-    # By default, fasta file will have same stem as individual read files, and will be stored in main assembly
-    # directory, one level above the run directory.
-
-    prefix = os.path.basename(fq1).split('_R1')[0]
-    interleaved_fastq = prefix + '_interleaved.fastq.gz'
-    interleaved_fasta = prefix + '_interleaved.fasta'
-
-    #Generate interleaved fastq file
-    interleave_cline = interleave_reads_cline(fq1, fq2, interleaved_fastq)
-    print 'Running "%s"' % interleave_cline
-    subprocess.call( interleave_cline, shell=True, executable='/bin/bash' )
-
-    #Convert fastq to fasta
-    fq2fa_cline = fastq2fasta_cline(interleaved_fastq, interleaved_fasta)
-    print fq2fa_cline
-
-    #Make IDBA_UD command line
-    idba_ud_cline = 'idba_ud -r %s -o %s --pre_correction' % (interleaved_fasta, out_dir)
-
-    print idba_ud_cline
-
-
-def SPAdes_cline():
-        pass
-
-def run_assembly(cline):
-        pass
+    subprocess.call(fq2fa_cline, shell=True, executable='/bin/bash')
 
 
 if __name__=='__main__':
@@ -92,4 +82,7 @@ if __name__=='__main__':
 
         
     if args.method == 'idba_ud':
-        print IDBA_UD_cline(args.forward, args.reverse, run_dir)
+        assembler = IBDA_UD_Wrapper(args.forward, args.reverse, run_dir)
+
+        assembler.prep()
+        assembler.run()
