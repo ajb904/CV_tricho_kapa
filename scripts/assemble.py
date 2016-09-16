@@ -18,6 +18,7 @@ class AssemblerWrapper(object):
         pass
 
     def run(self):
+        # Take the assembly cline made by prep method, and run it
         print 'Assembling'
         subprocess.call(self.assembly_cline, shell=True)
         print 'Done!'
