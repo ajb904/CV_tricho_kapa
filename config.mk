@@ -10,6 +10,8 @@ RAW_READS=$(wildcard test_fastq/fastq/*_001.fastq.gz)
 RAW_READ1=$(wildcard test_fastq/fastq/*_R1_001.fastq.gz)
 RAW_READ2=$(wildcard test_fastq/fastq/*_R2_001.fastq.gz)
 
-TRIMMED_READS=$(patsubst test_fastq/fastq/%_001.fastq.gz, %_trimmed.fastq.gz, $(RAW_READS))
+TRIMMED_READS=$(patsubst test_fastq/fastq/%_001.fastq.gz, trimmed_reads/fastq/%_trimmed.fastq.gz, $(RAW_READS))
 
 SPADES_ASSEMBLIES=$(patsubst test_fastq/fastq/%_R1_001.fastq.gz, assembly/spades_%/scaffolds.fasta, $(RAW_READ1))
+IDBA_UD_ASSEMBLIES=$(patsubst test_fastq/fastq/%_R1_001.fastq.gz, assembly/idba_ud_%/scaffold.fa, $(RAW_READ1))
+MEGAHIT_ASSEMBLIES=$(patsubst test_fastq/fastq/%_R1_001.fastq.gz, assembly/megahit_%/final.contigs.fa, $(RAW_READ1))

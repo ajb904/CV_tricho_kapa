@@ -1,8 +1,11 @@
 include config.mk
 
+RAW_READ_DIR=test_fastq/fastq
+TRIM_READ_DIR=trimmed_reads/fastq
+
 
 .PHONY : all
-all : $(TRIMMED_READS)
+all : trim assemble
 
 
 
@@ -10,8 +13,10 @@ all : $(TRIMMED_READS)
 .PHONY : trim
 trim : $(TRIMMED_READS)
 
-%_R1_trimmed.fastq.gz %_R2_trimmed.fastq.gz %_trimlog.txt : test_fastq/fastq/%_R1_001.fastq.gz test_fastq/fastq/%_R2_001.fastq.gz $(TRIM_SRC)
-	$(TRIM_EXE) test_fastq/fastq/$*_R1_001.fastq.gz testfastq/fastq/$*_R2_001.fastq.gz $*_R1_trimmed.fastq.gz $*_R2_trimmed.fastq.gz $*_trimlog.txt
+$(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(TRIM_READ_DIR)/%_trimlog.txt : $(RAW_READ_DIR)/%_R1_001.fastq.gz $(RAW_READ_DIR)/%_R2_001.fastq.gz $(TRIM_SRC)
+	mkdir -p trimmed_reads
+	mkdir -p $(TRIM_READ_DIR)
+	$(TRIM_EXE) $(RAW_READ_DIR)/$*_R1_001.fastq.gz $(RAW_READ_DIR)/$*_R2_001.fastq.gz $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz trimmed_reads/$*_trimlog.txt
 
 
 
@@ -27,11 +32,19 @@ trim : $(TRIMMED_READS)
 ## Assembly of full dataset
 # Assemble
 .PHONY : assemble
-assemble : assembly/spades_test_reads/scaffolds.fasta assembly/idba_ud_*/scaffold.fa assembly/megahit_*/final.contigs.fa
+assemble : $(SPADES_ASSEMBLIES) $(IDBA_UD_ASSEMBLIES) $(MEGAHIT_ASSEMBLIES)
 
-assembly/spades_%/scaffolds.fasta : test_fastq/fastq/%_R1_001.fastq.gz test_fastq/fastq/%_R2_001.fastq.gz $(ASSEMBLY_SRC)
+assembly/spades_%/scaffolds.fasta : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(ASSEMBLY_SRC)
 	mkdir -p assembly
-	$(ASSEMBLY_EXE) -m spades -f test_fastq/fastq/$*_R1_001.fastq.gz -r test_fastq/fastq/$*_R2_001.fastq.gz -o assembly -p $*
+	$(ASSEMBLY_EXE) -m spades -f $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -r $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -o assembly -p $*
+
+assembly/megahit_%/final.contigs.fa : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(ASSEMBLY_SRC)
+	mkdir -p assembly
+	$(ASSEMBLY_EXE) -m megahit -f $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -r $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -o assembly -p $*
+
+assembly/idba_ud_%/scaffold.fa : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(ASSEMBLY_SRC)
+	mkdir -p assembly
+	$(ASSEMBLY_EXE) -m idba_ud -f $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -r $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -o assembly -p $*
 
 
 # Calculate stats
@@ -67,7 +80,7 @@ assembly/spades_%/scaffolds.fasta : test_fastq/fastq/%_R1_001.fastq.gz test_fast
 
 .PHONY : clean
 clean : 
-	rm -f *_trimmed.fastq.gz
+	rm -rf $(TRIM_READ_DIR)
 	
 .PHONY : variables
 variables:
@@ -76,3 +89,5 @@ variables:
 	@echo RAW_READ2: $(RAW_READ2)
 	@echo TRIMMED_READS: $(TRIMMED_READS)
 	@echo SPADES_ASSEMBLIES: $(SPADES_ASSEMBLIES)
+	@echo IDBA_UD_ASSEMBLIES: $(IDBA_UD_ASSEMBLIES)
+	@echo MEGAHIT_ASSEMBLIES: $(MEGAHIT_ASSEMBLIES)
