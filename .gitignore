@@ -32,3 +32,8 @@ opts.txt
 
 #Velvet
 *_Logfile.txt
+
+
+# Backups and .pyc files #
+~*
+*.pyc
