@@ -60,17 +60,18 @@ class VelvetWrapper(AssemblerWrapper):
         self.maxk = maxk
         self.step = step
 
-        self.optimiser_exe = "~/Downloads/velvet_1.2.10/contrib/VelvetOptimiser-2.2.4/VelvetOptimiser.pl"
+        self.optimiser_exe = "~/Downloads/VelvetOptimiser-2.2.5/VelvetOptimiser.pl"
 
     def prep(self):
 
         velveth_string = "-fastq.gz -shortPaired -separate %s %s" % (self.fastq1, self.fastq2)
 
-        self.assembly_cline = "%s -t 8 -s %d -e %d -x %d -f '%s'" % (self.optimiser_exe,
-                                                                     self.mink,
-                                                                     self.maxk,
-                                                                     self.step,
-                                                                     velveth_string)
+        self.assembly_cline = "%s -t 8 -s %d -e %d -x %d -f '%s' -p %s" % (self.optimiser_exe,
+                                                                           self.mink,
+                                                                           self.maxk,
+                                                                           self.step,
+                                                                           velveth_string,
+                                                                           self.out_dir)
 
 
 class MegahitWrapper(AssemblerWrapper):
