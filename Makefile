@@ -12,11 +12,11 @@ all : quality_check trim quality_check assemble
 .PHONY : quality_check
 quality_check : $(RAW_QUALS) $(TRIMMED_QUALS)
 
-test_fastq/QC/%_fastqc.html : $(RAW_READ_DIR)/%_001.fastq.gz
+test_fastq/QC/%001_fastqc.html : $(RAW_READ_DIR)/%_001.fastq.gz
 	mkdir -p test_fastq/QC
 	fastqc -o test_fastq/QC $<
 
-trimmed_reads/QC/%_fastqc.html : $(TRIM_READ_DIR)/%_trimmed.fastq.gz
+trimmed_reads/QC/%trimmed_fastqc.html : $(TRIM_READ_DIR)/%_trimmed.fastq.gz
 	mkdir -p trimmed_reads/QC
 	fastqc -o trimmed_reads/QC $(TRIM_READ_DIR)/$*_trimmed.fastq.gz
 
