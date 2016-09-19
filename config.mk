@@ -2,6 +2,14 @@
 TRIM_SRC=scripts/run_cutadapt.py
 TRIM_EXE=python $(TRIM_SRC)
 
+ASSEMBLY_SRC=scripts/assemble.py
+ASSEMBLY_EXE=python $(ASSEMBLY_SRC)
+
 #Variables
-RAW_READS=$(wildcard testfastq/*_001.fastq.gz)
-TRIMMED_READS=$(patsubst testfastq/%_001.fastq.gz, %_trimmed.fastq.gz, $(RAW_READS))
+RAW_READS=$(wildcard test_fastq/fastq/*_001.fastq.gz)
+RAW_READ1=$(wildcard test_fastq/fastq/*_R1_001.fastq.gz)
+RAW_READ2=$(wildcard test_fastq/fastq/*_R2_001.fastq.gz)
+
+TRIMMED_READS=$(patsubst test_fastq/fastq/%_001.fastq.gz, %_trimmed.fastq.gz, $(RAW_READS))
+
+SPADES_ASSEMBLIES=$(patsubst test_fastq/fastq/%_R1_001.fastq.gz, assembly/spades_%/scaffolds.fasta, $(RAW_READ1))

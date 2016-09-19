@@ -14,11 +14,6 @@ begin
 end
 kmer
 log
-align-100-0
-align-80
-align-60
-align-40
-align-20
 
 #Megahit
 done

@@ -114,13 +114,14 @@ if __name__=='__main__':
     parser.add_argument("-f", "--forward", help="Fastq file containing first reads of pair", required=True)
     parser.add_argument("-r", "--reverse", help="Fastq file containing second reads of pair", required=True)
         
-    parser.add_argument("-o", "--out_prefix", help="Prefix to add to run output folder (after method name)", default="")
+    parser.add_argument("-o", "--out_dir", help="Assembly directory", default="assembly")
+    parser.add_argument("-p", "--prefix", help="prefix to add to output directory (after method name)", default = "test")
     args = parser.parse_args()
         
         
     print args.method
     print args.forward, args.reverse
-    run_dir = "%s_%s" % (args.method, args.out_prefix)
+    run_dir = os.path.join(args.out_dir, "%s_%s" % (args.method, args.prefix))
     print run_dir
 
         

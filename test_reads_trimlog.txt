@@ -1,0 +1,3 @@
+This is cutadapt 1.10 with Python 2.7.8
+Command line parameters: -a CTGTCTCTTATACACATCT -A CTGTCTCTTATACACATCT -q 15 -m 250 -o test_reads_R1_trimmed.fastq.gz -p test_reads_R2_trimmed.fastq.gz test_fastq/fastq/test_reads_R1_001.fastq.gz testfastq/fastq/test_reads_R2_001.fastq.gz
+Trimming 2 adapters with at most 10.0% errors in paired-end mode ...
