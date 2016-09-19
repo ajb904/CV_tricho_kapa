@@ -5,7 +5,20 @@ TRIM_READ_DIR=trimmed_reads/fastq
 
 
 .PHONY : all
-all : trim assemble
+all : quality_check trim quality_check assemble
+
+
+# Check fastq quality metrics with fastqc
+.PHONY : quality_check
+quality_check : $(RAW_QUALS) $(TRIMMED_QUALS)
+
+test_fastq/QC/%_fastqc.html : $(RAW_READ_DIR)/%_001.fastq.gz
+	mkdir -p test_fastq/QC
+	fastqc -o test_fastq/QC $(RAW_READ_DIR)/$*_001.fastq.gz
+
+trimmed_reads/QC/%_fastqc.html : $(TRIM_READ_DIR)/%_trimmed.fastq.gz
+	mkdir -p trimmed_reads/QC
+	fastqc -o trimmed_reads/QC $(TRIM_READ_DIR)/$*_trimmed.fastq.gz
 
 
 
@@ -13,7 +26,7 @@ all : trim assemble
 .PHONY : trim
 trim : $(TRIMMED_READS)
 
-$(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(TRIM_READ_DIR)/%_trimlog.txt : $(RAW_READ_DIR)/%_R1_001.fastq.gz $(RAW_READ_DIR)/%_R2_001.fastq.gz $(TRIM_SRC)
+$(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz trimmed_reads/%_trimlog.txt : $(RAW_READ_DIR)/%_R1_001.fastq.gz $(RAW_READ_DIR)/%_R2_001.fastq.gz $(TRIM_SRC)
 	mkdir -p trimmed_reads
 	mkdir -p $(TRIM_READ_DIR)
 	$(TRIM_EXE) $(RAW_READ_DIR)/$*_R1_001.fastq.gz $(RAW_READ_DIR)/$*_R2_001.fastq.gz $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz trimmed_reads/$*_trimlog.txt
