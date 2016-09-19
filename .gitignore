@@ -32,6 +32,12 @@ opts.txt
 
 #Velvet
 *_Logfile.txt
+Log
+stats.txt
+Sequences
+PreGraph
+Graph
+*_logfile.txt
 
 
 # Backups and .pyc files #
