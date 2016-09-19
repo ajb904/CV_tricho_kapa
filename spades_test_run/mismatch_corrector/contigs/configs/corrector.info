@@ -1,0 +1,6 @@
+"bwa": "/home/ajb1d14/Downloads/SPAdes-3.9.0-Linux/bin/bwa-spades"
+"dataset": "/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/input_dataset.yaml"
+"max_nthreads": !!int "8"
+"output_dir": "/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/mismatch_corrector/contigs"
+"strategy": "mapped_squared"
+"work_dir": "/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/mismatch_corrector/contigs/tmp"

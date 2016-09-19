@@ -1,0 +1,10 @@
+Mon Sep 19 08:45:17 2016
+ velveth -k 21 -fastq.gz -shortPaired -separate test_fastq/fastq/test_reads_R1_001.fastq.gz test_fastq/fastq/test_reads_R2_001.fastq.gz
+Version 1.2.10
+Copyright 2007, 2008 Daniel Zerbino (zerbino@ebi.ac.uk)
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Compilation settings:
+CATEGORIES = 4
+MAXKMERLENGTH = 201
+

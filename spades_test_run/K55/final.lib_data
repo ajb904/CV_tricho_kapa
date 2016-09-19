@@ -1,0 +1,23 @@
+---
+- type:            paired-end
+  orientation:     fr
+  left reads:      
+    - /research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/corrected/test_reads_R1_001.fastq.00.0_0.cor.fastq.gz
+  right reads:     
+    - /research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/corrected/test_reads_R2_001.fastq.00.0_0.cor.fastq.gz
+  single reads:    
+    - /research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/corrected/test_reads_R_unpaired.00.0_0.cor.fastq.gz
+  read length:     300
+  average read length: 163.934
+  insert size mean: 0
+  insert size deviation: 0
+  insert size left quantile: 0
+  insert size right quantile: 0
+  insert size median: 0
+  insert size mad: 0
+  insert size distribution: {  }
+  average coverage: 1.67163
+  pi threshold:    0
+  binary converted: true
+  single reads mapped: false
+...

@@ -1,0 +1,4 @@
+- left reads: [/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/test_fastq/fastq/test_reads_R1_001.fastq.gz]
+  orientation: fr
+  right reads: [/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/test_fastq/fastq/test_reads_R2_001.fastq.gz]
+  type: paired-end
