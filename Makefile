@@ -12,13 +12,13 @@ all : quality_check trim quality_check assemble
 .PHONY : quality_check
 quality_check : $(RAW_QUALS) $(TRIMMED_QUALS)
 
-test_fastq/QC/%001_fastqc.html : $(RAW_READ_DIR)/%_001.fastq.gz
+test_fastq/QC/%_fastqc.html : $(RAW_READ_DIR)/%.fastq.gz
 	mkdir -p test_fastq/QC
 	fastqc -o test_fastq/QC $<
 
-trimmed_reads/QC/%trimmed_fastqc.html : $(TRIM_READ_DIR)/%_trimmed.fastq.gz
+trimmed_reads/QC/%_fastqc.html : $(TRIM_READ_DIR)/%.fastq.gz
 	mkdir -p trimmed_reads/QC
-	fastqc -o trimmed_reads/QC $(TRIM_READ_DIR)/$*_trimmed.fastq.gz
+	fastqc -o trimmed_reads/QC $<
 
 
 
@@ -93,14 +93,19 @@ assembly/idba_ud_%/scaffold.fa : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_R
 
 .PHONY : clean
 clean : 
-	rm -rf $(TRIM_READ_DIR)
-	
+	rm -rf trimmed_reads
+	rm -rf assembly
+	rm -rf test_fastq/QC
+
+
 .PHONY : variables
 variables:
 	@echo RAW_READS: $(RAW_READS)
 	@echo RAW_READ1: $(RAW_READ1)
 	@echo RAW_READ2: $(RAW_READ2)
+	@echo RAW_QUALS: $(RAW_QUALS)
 	@echo TRIMMED_READS: $(TRIMMED_READS)
+	@echo TRIMMED_QUALS: $(TRIMMED_QUALS)
 	@echo SPADES_ASSEMBLIES: $(SPADES_ASSEMBLIES)
 	@echo IDBA_UD_ASSEMBLIES: $(IDBA_UD_ASSEMBLIES)
 	@echo MEGAHIT_ASSEMBLIES: $(MEGAHIT_ASSEMBLIES)
