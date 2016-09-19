@@ -64,7 +64,7 @@ class VelvetWrapper(AssemblerWrapper):
 
     def prep(self):
 
-        velveth_string = "-shortPaired -fastq -separate %s %s" % (self.fastq1, self.fastq2)
+        velveth_string = "-shortPaired -fastq.gz -separate %s %s" % (self.fastq1, self.fastq2)
 
         self.assembly_cline = "%s -t 8 -s %d -e %d -x %d -f '%s'" % (self.optimiser_exe,
                                                                      self.mink,
