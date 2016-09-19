@@ -1,30 +1,22 @@
 include config.mk
 
-RAW_DIR=raw_sequence
-RAW_READ_DIR=$(RAW_DIR)/fastq
-RAW_QUAL_DIR=$(RAW_DIR)/QC
-TRIM_DIR=trimmed_reads
-TRIM_READ_DIR=$(TRIM_DIR)/fastq
-TRIM_QUAL_DIR=$(TRIM_DIR)/QC
-
-
 .PHONY : all
 all : quality_check_raw trim quality_check_trimmed
 
 
 # Check fastq quality metrics with fastqc
 .PHONY : quality_check_raw
-quality_check : $(RAW_QUALS)
+quality_check_raw : $(RAW_QUALS)
 
-test_fastq/QC/%_fastqc.html : $(RAW_READ_DIR)/%.fastq.gz
+$(RAW_QUAL_DIR)/%_fastqc.html : $(RAW_READ_DIR)/%.fastq.gz
 	mkdir -p $(RAW_QUAL_DIR)
 	fastqc -o $(RAW_QUAL_DIR) $<
 
 
 .PHONY : quality_check_trimmed
-quality_check : $(TRIMMED_QUALS)
+quality_check_trimmed : $(TRIMMED_QUALS)
 
-trimmed_reads/QC/%_fastqc.html : $(TRIM_READ_DIR)/%.fastq.gz
+$(TRIM_QUAL_DIR)/%_fastqc.html : $(TRIM_READ_DIR)/%.fastq.gz
 	mkdir -p $(TRIM_QUAL_DIR)
 	fastqc -o $(TRIM_QUAL_DIR) $<
 

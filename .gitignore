@@ -7,6 +7,10 @@
 *.fa
 *.fasta
 
+# Output from read trimming #
+#############################
+*_trimlog.txt
+
 # Other output from assembly software #
 #######################################
 #IDBA_UD

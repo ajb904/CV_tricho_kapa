@@ -7,8 +7,8 @@ import subprocess
 
 QUALITY_THRESHOLD = 15
 MAX_TRIMMED_SIZE = 250
-FORWARD_ADAPTOR = 'CTGTCTCTTATACACATCT'
-REVERSE_ADAPTOR = 'CTGTCTCTTATACACATCT'
+FORWARD_ADAPTOR = 'AGATCGGAAGAGC'
+REVERSE_ADAPTOR = 'AGATCGGAAGAGC'
 
 rawR1, rawR2, trimmedR1, trimmedR2, logfile = tuple(sys.argv[1:])
 
@@ -30,3 +30,4 @@ stdout = proc.communicate()[0]
 log = open(logfile, 'w')
 log.write(stdout)
 log.close()
+
