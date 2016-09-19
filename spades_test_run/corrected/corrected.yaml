@@ -1,8 +1,0 @@
-- "left reads":
-  - "/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/corrected/test_reads_R1_001.fastq.00.0_0.cor.fastq.gz"
-  "orientation": "fr"
-  "right reads":
-  - "/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/corrected/test_reads_R2_001.fastq.00.0_0.cor.fastq.gz"
-  "single reads":
-  - "/research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/corrected/test_reads_R_unpaired.00.0_0.cor.fastq.gz"
-  "type": "paired-end"

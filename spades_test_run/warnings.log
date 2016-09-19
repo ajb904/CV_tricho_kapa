@@ -1,5 +1,0 @@
-
-=== Error correction and assembling warnings:
- * 0:00:11.013    72M / 14G   WARN    General                 (kmer_coverage_model.cpp   : 217)   Too many erroneous kmers, the estimates might be unreliable
- * 0:00:20.193    60M / 14G   WARN    General                 (simplification.cpp        : 530)   The determined erroneous connection coverage threshold may be determined improperly
-======= Warnings saved to /research/miseq/ajb1d14/TrichoDiversity/CV_samples_kapa/spades_test_run/warnings.log

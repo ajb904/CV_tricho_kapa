@@ -1,9 +1,0 @@
--1
-test_fastq/fastq/test_reads_R1_001.fastq.gz
--2
-test_fastq/fastq/test_reads_R2_001.fastq.gz
--o
-megahit_test_run
---presets
-meta
-MEGAHIT_TEMP_DIR: megahit_test_run/tmp/
