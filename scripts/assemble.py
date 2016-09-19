@@ -28,7 +28,7 @@ class AssemblerWrapper(object):
 class IDBAUDWrapper(AssemblerWrapper):
 
     def __init__(self, r1, r2, out_dir):
-        super(IBDAUDWrapper, self).__init__(r1, r2, out_dir)
+        super(IDBAUDWrapper, self).__init__(r1, r2, out_dir)
 
         self.basename = os.path.basename(self.fastq1).split('_R1')[0]
         self.interleaved_fastq = self.basename + "_interleaved.fastq.gz"
@@ -119,7 +119,7 @@ if __name__=='__main__':
 
         
     if args.method == 'idba_ud':
-        assembler = IBDAUDWrapper(args.forward, args.reverse, run_dir)
+        assembler = IDBAUDWrapper(args.forward, args.reverse, run_dir)
 
     elif args.method == 'spades':
         assembler = SPAdesWrapper(args.forward, args.reverse, run_dir)
