@@ -1,24 +1,32 @@
 include config.mk
 
-RAW_READ_DIR=test_fastq/fastq
-TRIM_READ_DIR=trimmed_reads/fastq
+RAW_DIR=raw_sequence
+RAW_READ_DIR=$(RAW_DIR)/fastq
+RAW_QUAL_DIR=$(RAW_DIR)/QC
+TRIM_DIR=trimmed_reads
+TRIM_READ_DIR=$(TRIM_DIR)/fastq
+TRIM_QUAL_DIR=$(TRIM_DIR)/QC
 
 
 .PHONY : all
-all : quality_check trim quality_check assemble
+all : quality_check_raw trim quality_check_trimmed
 
 
 # Check fastq quality metrics with fastqc
-.PHONY : quality_check
-quality_check : $(RAW_QUALS) $(TRIMMED_QUALS)
+.PHONY : quality_check_raw
+quality_check : $(RAW_QUALS)
 
 test_fastq/QC/%_fastqc.html : $(RAW_READ_DIR)/%.fastq.gz
-	mkdir -p test_fastq/QC
-	fastqc -o test_fastq/QC $<
+	mkdir -p $(RAW_QUAL_DIR)
+	fastqc -o $(RAW_QUAL_DIR) $<
+
+
+.PHONY : quality_check_trimmed
+quality_check : $(TRIMMED_QUALS)
 
 trimmed_reads/QC/%_fastqc.html : $(TRIM_READ_DIR)/%.fastq.gz
-	mkdir -p trimmed_reads/QC
-	fastqc -o trimmed_reads/QC $<
+	mkdir -p $(TRIM_QUAL_DIR)
+	fastqc -o $(TRIM_QUAL_DIR) $<
 
 
 
@@ -27,9 +35,9 @@ trimmed_reads/QC/%_fastqc.html : $(TRIM_READ_DIR)/%.fastq.gz
 trim : $(TRIMMED_READS)
 
 $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz trimmed_reads/%_trimlog.txt : $(RAW_READ_DIR)/%_R1_001.fastq.gz $(RAW_READ_DIR)/%_R2_001.fastq.gz $(TRIM_SRC)
-	mkdir -p trimmed_reads
+	mkdir -p $(TRIM_DIR)
 	mkdir -p $(TRIM_READ_DIR)
-	$(TRIM_EXE) $(RAW_READ_DIR)/$*_R1_001.fastq.gz $(RAW_READ_DIR)/$*_R2_001.fastq.gz $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz trimmed_reads/$*_trimlog.txt
+	$(TRIM_EXE) $(RAW_READ_DIR)/$*_R1_001.fastq.gz $(RAW_READ_DIR)/$*_R2_001.fastq.gz $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz $(TRIM_DIR)/$*_trimlog.txt
 
 
 
@@ -93,9 +101,9 @@ assembly/idba_ud_%/scaffold.fa : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_R
 
 .PHONY : clean
 clean : 
-	rm -rf trimmed_reads
+	rm -rf $(TRIM_DIR)
 	rm -rf assembly
-	rm -rf test_fastq/QC
+	rm -rf $(RAW_QUAL_DIR)
 
 
 .PHONY : variables
