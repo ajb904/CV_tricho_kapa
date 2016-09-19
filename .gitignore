@@ -1,0 +1,34 @@
+# fastq and fasta files #
+#########################
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.fa
+*.fasta
+
+# Other output from assembly software #
+#######################################
+#IDBA_UD
+begin
+end
+kmer
+log
+
+#Megahit
+done
+*.info
+opts.txt
+
+#SPAdes
+*fastg
+*.paths
+*.log
+*.amb
+*.ann
+*.bwt
+*.pac
+*.sa
+
+#Velvet
+*_Logfile.txt
