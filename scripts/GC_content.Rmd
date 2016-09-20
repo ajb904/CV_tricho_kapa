@@ -8,10 +8,16 @@ output: html_document
 ```{r}
 library(ggplot2)
 
-df <- read.delim('../test_GC.tab', header=F)
+df <- read.delim('../Tn019_test_GC.tab', header=F)
 
 colnames(df) <- c('Read', 'GC.percent')
 
 ggplot(df, aes(x=GC.percent)) + geom_histogram(binwidth = 5)
 
+```
+
+```{r extract_highGC}
+ss <- subset(df, GC.percent > 50)
+
+write.table(ss, file = '../Tn019_test_highGC.tab', col.names = F, row.names=F, sep='\t', quote = F)
 ```
