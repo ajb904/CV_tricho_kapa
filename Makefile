@@ -34,7 +34,25 @@ $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz tr
 
 
 ## Alignments
+
 # Align reads vs IMS101
+.PHONY : IMS101_alignment
+IMS101_alignment : ref/IMS101.fasta $(FULL_IMS101_ALIGN_DIR)/aligned/Tn004_S1_L001_v_IMS101.bam  $(FULL_IMS101_ALIGN_DIR)/aligned/Tn019_S2_L001_v_IMS101.bam $(FULL_IMS101_ALIGN_DIR)/aligned/Tn004_S1_L001/qualimapReport.html $(FULL_IMS101_ALIGN_DIR)/aligned/Tn019_S2_L001/qualimapReport.html 
+
+ref/IMS101.fasta : 
+	mkdir -p ref
+	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF_000014265.1_ASM1426v1/GCF_000014265.1_ASM1426v1_genomic.fna.gz
+	mv GCF_000014265.1_ASM1426v1_genomic.fna.gz ref/IMS101.fasta.gz
+	gunzip ref/IMS101.fasta.gz
+
+$(FULL_IMS101_ALIGN_DIR)/aligned/%_v_IMS101.bam : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(ALIGN_SRC)
+	mkdir -p $(ALIGN_DIR)
+	mkdir -p $(FULL_IMS101_ALIGN_DIR)
+	$(ALIGN_EXE) -f $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -r $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -i ref/IMS101 -a $(FULL_IMS101_ALIGN_DIR)/aligned -u $(FULL_IMS101_ALIGN_DIR)/unaligned
+	
+$(FULL_IMS101_ALIGN_DIR)/aligned/%/qualimapReport.html : $(FULL_IMS101_ALIGN_DIR)/aligned/%_v_IMS101.bam
+	$(QUALIMAP_EXE) bamqc -bam $(FULL_IMS101_ALIGN_DIR)/aligned/$*_v_IMS101.bam -outdir $(FULL_IMS101_ALIGN_DIR)/aligned/$*_qualimap
+	
 
 # Align reads vs T. theibautii H9-4
 
