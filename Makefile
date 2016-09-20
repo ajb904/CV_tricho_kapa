@@ -1,7 +1,7 @@
 include config.mk
 
 .PHONY : all
-all : quality_check_raw trim quality_check_trimmed
+all : quality_check_raw trim quality_check_trimmed IMS101_alignment
 
 
 # Check fastq quality metrics with fastqc
