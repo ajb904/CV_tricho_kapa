@@ -1,0 +1,17 @@
+---
+title: "CV Tricho - Kapa: GC content distribution"
+author: "Alison Baylay"
+date: "20 September 2016"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+
+df <- read.delim('../test_GC.tab', header=F)
+
+colnames(df) <- c('Read', 'GC.percent')
+
+ggplot(df, aes(x=GC.percent)) + geom_histogram(binwidth = 5)
+
+```
