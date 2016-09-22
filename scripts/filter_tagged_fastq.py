@@ -7,6 +7,8 @@
 import argparse
 from Bio import SeqIO
 import gzip
+import os
+import subprocess
 
 def read_fastq_gz(gzfile):
     handle = gzip.open(gzfile, 'rb')
@@ -44,16 +46,45 @@ def is_not_contaminant(read):
         return False
 
 
+def tag_reads(fastq, out_dir):
+    # Run fastq_screen --tag on each input file and return the filename of the tagged file
+
+
+    fastq_screen_cline = 'fastq_screen --tag --outdir %s %s' % (out_dir, fastq)
+    print 'Running: %s' % fastq_screen_cline
+    subprocess.call(fastq_screen_cline, shell=True)
+
+    tagged_fastq_file = os.path.basename(fastq).replace('.fastq.gz', '.tagged.fastq.gz')
+
+    tagged_fastq_filepath = os.path.join(out_dir, tagged_fastq_file)
+
+    return tagged_fastq_filepath
+
+
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-1', '--fastq1', help="tagged forward reads", required=True)
-    parser.add_argument('-2', '--fastq2', help="tagged forward reads", required=True)
+    parser.add_argument('-1', '--fastq1', help="forward reads", required=True)
+    parser.add_argument('-2', '--fastq2', help="reverse reads", required=True)
+    parser.add_argument('-t', '--tagged', help="are reads already tagged?", action='store_true')
+    parser.add_argument('-o', '--out_dir', help="output directory")
     args = parser.parse_args()
 
     fq_file1 = args.fastq1
     fq_file2 = args.fastq2
+
+    if args.out_dir:
+        out_dir = args.out_dir
+    else:
+        out_dir = os.path.dirname(fq_file1)
+
+    # If reads are not already tagged, run fastq_screen to tag them. Intermediate 'tagged' files will have
+    # '.tagged' inserted into the file name before '.fastq.gz'
+
+    if not args.tagged:
+        fq_file1 = tag_reads(fq_file1, out_dir)
+        fq_file2 = tag_reads(fq_file2, out_dir)
 
     fq1 = read_fastq_gz(fq_file1)
     fq2 = read_fastq_gz(fq_file2)
