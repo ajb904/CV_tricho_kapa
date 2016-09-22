@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f1681cee-fb47-4f97-889a-2cd5597bb3e9" name="Default" comment="Rmd for plotting GC distribution">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/scripts/run_bowtie2.py" />
+    <list default="true" id="f1681cee-fb47-4f97-889a-2cd5597bb3e9" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scripts/filter_tagged_fastq.py" afterPath="$PROJECT_DIR$/scripts/filter_tagged_fastq.py" />
     </list>
     <ignored path="CV_tricho_kapa.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -48,13 +48,25 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="run_bowtie2.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="run_bowtie2.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scripts/run_bowtie2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1380">
-              <caret line="92" column="97" selection-start-line="92" selection-start-column="97" selection-end-line="92" selection-end-column="97" />
+            <state relative-caret-position="315">
+              <caret line="21" column="38" selection-start-line="21" selection-start-column="38" selection-end-line="21" selection-end-column="38" />
               <folding>
                 <element signature="e#25#40#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="filter_tagged_fastq.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/scripts/filter_tagged_fastq.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="483">
+              <caret line="69" column="0" selection-start-line="69" selection-start-column="0" selection-end-line="69" selection-end-column="0" />
+              <folding>
+                <element signature="e#197#212#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -78,12 +90,13 @@
         <option value="$PROJECT_DIR$/scripts/assemble.py" />
         <option value="$PROJECT_DIR$/scripts/GC_per_read.py" />
         <option value="$PROJECT_DIR$/scripts/run_bowtie2.py" />
+        <option value="$PROJECT_DIR$/scripts/filter_tagged_fastq.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="34" />
-    <option name="y" value="23" />
+    <option name="x" value="558" />
+    <option name="y" value="151" />
     <option name="width" value="1120" />
     <option name="height" value="730" />
   </component>
@@ -294,6 +307,9 @@
   <component name="ShelveChangesManager" show_recycled="false">
     <option name="remove_strategy" value="false" />
   </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="f1681cee-fb47-4f97-889a-2cd5597bb3e9" name="Default" comment="" />
@@ -372,11 +388,18 @@
       <option name="project" value="LOCAL" />
       <updated>1474364628440</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Made bowtie2 wrapper script">
+      <created>1474378531691</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1474378531691</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="34" y="23" width="1120" height="730" extended-state="0" />
+    <frame x="558" y="151" width="1120" height="730" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -419,7 +442,8 @@
     <MESSAGE value="Corrected velveth string" />
     <MESSAGE value="Added script for calculating GC content of reads" />
     <MESSAGE value="Rmd for plotting GC distribution" />
-    <option name="LAST_COMMIT_MESSAGE" value="Rmd for plotting GC distribution" />
+    <MESSAGE value="Made bowtie2 wrapper script" />
+    <option name="LAST_COMMIT_MESSAGE" value="Made bowtie2 wrapper script" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -478,10 +502,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/scripts/run_bowtie2.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1380">
-          <caret line="92" column="97" selection-start-line="92" selection-start-column="97" selection-end-line="92" selection-end-column="97" />
+        <state relative-caret-position="315">
+          <caret line="21" column="38" selection-start-line="21" selection-start-column="38" selection-end-line="21" selection-end-column="38" />
           <folding>
             <element signature="e#25#40#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/filter_tagged_fastq.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="483">
+          <caret line="69" column="0" selection-start-line="69" selection-start-column="0" selection-end-line="69" selection-end-column="0" />
+          <folding>
+            <element signature="e#197#212#0" expanded="true" />
           </folding>
         </state>
       </provider>
