@@ -49,7 +49,6 @@ PreGraph
 Graph
 *_logfile.txt
 
-
 # Backups and .pyc files #
 ~*
 *.pyc

@@ -45,6 +45,15 @@ def is_not_contaminant(read):
     else:
         return False
 
+def remove_tag(read):
+    # Remove fastq_screen tags from sequence read descriptions when writing, in case they interfere with
+    # downstream processing
+    untagged_desc = read.description.split('#FQST')[0]
+
+    read.description = untagged_desc
+
+    return read
+
 
 def tag_reads(fastq, out_dir):
     # Run fastq_screen --tag on each input file and return the filename of the tagged file
@@ -89,10 +98,14 @@ if __name__ == "__main__":
     fq1 = read_fastq_gz(fq_file1)
     fq2 = read_fastq_gz(fq_file2)
 
-    keep_r1 = []
-    keep_r2 = []
+    outfile1 = fq_file1.replace('.tagged', '.filtered')
+    outfile2 = fq_file2.replace('.tagged', '.filtered')
+
+    out1 = gzip.open(outfile1, mode='wb')
+    out2 = gzip.open(outfile2, mode='wb')
 
     read_counter = 0
+    kept_counter = 0
 
     while 1:
         try:
@@ -102,8 +115,13 @@ if __name__ == "__main__":
             assert r1.id == r2.id, 'Fastq files must be correctly paired'
 
             if is_not_contaminant(r1) and is_not_contaminant(r2):
-                keep_r1.append(r1)
-                keep_r2.append(r2)
+                r1 = remove_tag(r1)
+                r2 = remove_tag(r2)
+
+                kept1 = SeqIO.write(r1, out1, 'fastq')
+                kept2 = SeqIO.write(r2, out2, 'fastq')
+
+                kept_counter += 1
 
             read_counter += 1
 
@@ -111,22 +129,11 @@ if __name__ == "__main__":
             break
 
 
-    keep = len(keep_r1)
-    total = read_counter
-    keep_percent = float(keep)/total * 100
+    keep_percent = float(kept_counter)/read_counter * 100
 
-    print 'Done filtering. Keeping %d out of %d read pairs (%.2f %%)' % (len(keep_r1),
+    print 'Done filtering. Keeping %d out of %d read pairs (%.2f %%)' % (kept_counter,
                                                                          read_counter,
                                                                          keep_percent)
-
-    outfile1 = fq_file1.replace('.tagged', '.filtered')
-    outfile2 = fq_file2.replace('.tagged', '.filtered')
-
-    out1 = gzip.open(outfile1, mode='wb')
-    out2 = gzip.open(outfile2, mode='wb')
-
-    SeqIO.write(keep_r1, out1, 'fastq')
-    SeqIO.write(keep_r2, out2, 'fastq')
 
     out1.close()
     out2.close()
