@@ -33,6 +33,31 @@ $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz tr
 
 
 
+
+
+.PHONY : filter_reads
+filter_reads : $(FILTERED_READS) $(FILTERED_QUALS) ref/Pfluor.1.bt2
+## There seems to be contamination (~25%) with P. fluorescens in both samples (this is not present in the D. tertiolecta samples that were processed at the same time). Remove contamination by alignment against P. fluorescens genome (strain LBUM636) and keep the read pairs that don't align. Continue with plan from here, but bear contamination in mind when drawing conclusions...
+
+$(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz ~/bin/fastq_screen.conf ref/Pfluor.1.bt2 $(FILTER_SRC)
+	mkdir -p $(FILTER_DIR)
+	mkdir -p $(FILTER_READ_DIR)
+	$(FILTER_EXE) -1 $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -2 $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -o $(FILTER_READ_DIR)
+
+$(FILTER_QUAL_DIR)/%_fastqc.html : $(FILTER_READ_DIR)/%.fastq.gz
+	mkdir -p $(FILTER_QUAL_DIR)
+	fastqc -o $(FILTER_QUAL_DIR) $<
+
+ref/Pfluor.fasta : 
+	mkdir -p ref
+	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF_001612705.1_ASM161270v1/GCF_001612705.1_ASM161270v1_genomic.fna.gz
+	mv GCF_001612705.1_ASM161270v1_genomic.fna.gz ref/Pfluor.fasta.gz
+	gunzip ref/Pfluor.fasta.gz
+	
+ref/%.1.bt2 : ref/%.fasta
+	bowtie2-build $< ref/$*
+	
+
 ## Alignments
 
 # Align reads vs IMS101
@@ -125,6 +150,8 @@ variables:
 	@echo RAW_QUALS: $(RAW_QUALS)
 	@echo TRIMMED_READS: $(TRIMMED_READS)
 	@echo TRIMMED_QUALS: $(TRIMMED_QUALS)
+	@echo FILTERED_READS: $(FILTERED_READS)
+	@echo FILTERED_QUALS: $(FILTERED_QUALS)
 	@echo SPADES_ASSEMBLIES: $(SPADES_ASSEMBLIES)
 	@echo IDBA_UD_ASSEMBLIES: $(IDBA_UD_ASSEMBLIES)
 	@echo MEGAHIT_ASSEMBLIES: $(MEGAHIT_ASSEMBLIES)
