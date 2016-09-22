@@ -56,14 +56,17 @@ if __name__ == "__main__":
     keep_r2 = []
 
     while 1:
-        r1 = fq1.next()
-        r2 = fq2.next()
+        try:
+            r1 = fq1.next()
+            r2 = fq2.next()
 
-        assert r1.id == r2.id, 'Fastq files must be correctly paired'
+            assert r1.id == r2.id, 'Fastq files must be correctly paired'
 
-        if is_not_contaminant(r1) and is_not_contaminant(r2):
-            keep_r1.append(r1)
-            keep_r2.append(r2)
+            if is_not_contaminant(r1) and is_not_contaminant(r2):
+                keep_r1.append(r1)
+                keep_r2.append(r2)
+        except StopIteration:
+            break
 
     outfile1 = test_fq1.replace('.tagged', '.filtered')
     outfile2 = test_fq2.replace('.tagged', '.filtered')
