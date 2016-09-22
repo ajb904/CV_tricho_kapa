@@ -46,11 +46,17 @@ def is_not_contaminant(read):
 
 
 if __name__ == "__main__":
-    test_fq1 = "test_tag/Tn004_S1_L001_R1_trimmed.tagged.fastq.gz"
-    test_fq2 = "test_tag/Tn004_S1_L001_R2_trimmed.tagged.fastq.gz"
 
-    fq1 = read_fastq_gz(test_fq1)
-    fq2 = read_fastq_gz(test_fq2)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-1', '--fastq1', help="tagged forward reads", required=True)
+    parser.add_argument('-2', '--fastq2', help="tagged forward reads", required=True)
+    args = parser.parse_args()
+
+    fq_file1 = args.fastq1
+    fq_file2 = args.fastq2
+
+    fq1 = read_fastq_gz(fq_file1)
+    fq2 = read_fastq_gz(fq_file2)
 
     keep_r1 = []
     keep_r2 = []
@@ -82,8 +88,8 @@ if __name__ == "__main__":
                                                                          read_counter,
                                                                          keep_percent)
 
-    outfile1 = test_fq1.replace('.tagged', '.filtered')
-    outfile2 = test_fq2.replace('.tagged', '.filtered')
+    outfile1 = fq_file1.replace('.tagged', '.filtered')
+    outfile2 = fq_file2.replace('.tagged', '.filtered')
 
     out1 = gzip.open(outfile1, mode='wb')
     out2 = gzip.open(outfile2, mode='wb')
