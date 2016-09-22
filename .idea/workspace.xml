@@ -63,8 +63,8 @@
       <file leaf-file-name="filter_tagged_fastq.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/scripts/filter_tagged_fastq.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="588">
-              <caret line="76" column="39" selection-start-line="76" selection-start-column="39" selection-end-line="76" selection-end-column="39" />
+            <state relative-caret-position="603">
+              <caret line="89" column="0" selection-start-line="89" selection-start-column="0" selection-end-line="89" selection-end-column="0" />
               <folding>
                 <element signature="e#197#212#0" expanded="true" />
               </folding>
@@ -402,7 +402,14 @@
       <option name="project" value="LOCAL" />
       <updated>1474537936943</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="filter_tagged_fastq.py minor update">
+      <created>1474538068543</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1474538068543</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -451,7 +458,8 @@
     <MESSAGE value="Rmd for plotting GC distribution" />
     <MESSAGE value="Made bowtie2 wrapper script" />
     <MESSAGE value="filter_tagged_fastq.py ready to test" />
-    <option name="LAST_COMMIT_MESSAGE" value="filter_tagged_fastq.py ready to test" />
+    <MESSAGE value="filter_tagged_fastq.py minor update" />
+    <option name="LAST_COMMIT_MESSAGE" value="filter_tagged_fastq.py minor update" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -520,8 +528,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/scripts/filter_tagged_fastq.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="588">
-          <caret line="76" column="39" selection-start-line="76" selection-start-column="39" selection-end-line="76" selection-end-column="39" />
+        <state relative-caret-position="603">
+          <caret line="89" column="0" selection-start-line="89" selection-start-column="0" selection-end-line="89" selection-end-column="0" />
           <folding>
             <element signature="e#197#212#0" expanded="true" />
           </folding>

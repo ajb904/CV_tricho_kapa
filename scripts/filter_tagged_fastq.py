@@ -55,6 +55,8 @@ if __name__ == "__main__":
     keep_r1 = []
     keep_r2 = []
 
+    read_counter = 0
+
     while 1:
         try:
             r1 = fq1.next()
@@ -65,8 +67,20 @@ if __name__ == "__main__":
             if is_not_contaminant(r1) and is_not_contaminant(r2):
                 keep_r1.append(r1)
                 keep_r2.append(r2)
+
+            read_counter += 1
+
         except StopIteration:
             break
+
+
+    keep = len(keep_r1)
+    total = read_counter
+    keep_percent = float(keep)/total * 100
+
+    print 'Done filtering. Keeping %d out of %d read pairs (%.2f %%)' % (len(keep_r1),
+                                                                         read_counter,
+                                                                         keep_percent)
 
     outfile1 = test_fq1.replace('.tagged', '.filtered')
     outfile2 = test_fq2.replace('.tagged', '.filtered')
