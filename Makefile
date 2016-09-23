@@ -146,7 +146,7 @@ $(REDUNDANS_DIR)/%/assembly1000.1.bt2 : $(REDUNDANS_DIR)/%/assembly1000.fasta
 $(REDUNDANS_DIR)/%_v_assembly1000.bam : $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz $(ALIGN_SRC) $(REDUNDANS_DIR)/%/assembly1000.1.bt2
 	$(ALIGN_EXE) -f $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz -r $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -i $(REDUNDANS_DIR)/$*/assembly1000 -a $(REDUNDANS_DIR)/ -u $(REDUNDANS_DIR)/ 2> $(REDUNDANS_DIR)/$*_v_assembly1000_align.log
 	
-$(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(REDUNDANS_DIR)/%_assembly1000.bam
+$(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(REDUNDANS_DIR)/%.bam
 	$(QUALIMAP_EXE) bamqc -bam $< -outdir $(REDUNDANS_DIR)/$*_qualimap
 
 
