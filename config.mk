@@ -29,6 +29,9 @@ ALIGN_EXE=python $(ALIGN_SRC)
 
 QUALIMAP_EXE=~/Downloads/qualimap_v2.2/qualimap
 
+QUAST_EXE=~/Downloads/quast-4.0/quast.py
+
+
 
 #Variables
 RAW_READS=$(wildcard $(RAW_READ_DIR)/*_001.fastq.gz)

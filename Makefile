@@ -94,10 +94,10 @@ $(FULL_IMS101_ALIGN_DIR)/aligned/%/qualimapReport.html : $(FULL_IMS101_ALIGN_DIR
 # First, try Redundans, using the new sequencing (filtered to remove most of the contaminant) as the paired-end read dataset (this will be more useful than using the original Nextera data as the insert size is larger and more consistent).
 
 .PHONY : redundans
-redundans : $(REDUCTION_DIR)/Tn004_S1_L001/redundans/scaffolds.filled.fa $(REDUCTION_DIR)/Tn019_S2_L001/redundans/scaffolds.filled.fa
+redundans : $(REDUCTION_DIR)/Tn004_S1_L001/redundans/scaffolds.filled.fa $(REDUCTION_DIR)/Tn019_S2_L001/redundans/scaffolds.filled.fa $(REDUCTION_DIR)/Tn004_S1_L001/quast_comparison/report.html $(REDUCTION_DIR)/Tn019_S2_L001/quast_comparison/report.html
 
 $(REDUCTION_DIR)/%/redundans/scaffolds.filled.fa : $(REDUCTION_DIR)/%/spades_contigs.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
-	redundans.py -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(REDUCTION_DIR)/$*/spades_contigs.fasta -o $(REDUCTION_DIR)/$*/redundans
+	redundans.py -v -t 8 -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(REDUCTION_DIR)/$*/spades_contigs.fasta -o $(REDUCTION_DIR)/$*/redundans
 
 $(REDUCTION_DIR)/Tn004_S1_L001/spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/contigs.fasta
 	mkdir -p $(REDUCTION_DIR)
@@ -108,8 +108,20 @@ $(REDUCTION_DIR)/Tn019_S2_L001/spades_contigs.fasta : ../CV_samples_nextera/read
 	mkdir -p $(REDUCTION_DIR)
 	mkdir -p $(REDUCTION_DIR)/Tn019_S2_L001
 	cp $< $@
+
+## Compare redundans results with old SPAdes assemblies (compare vs scaffolds for 004, not contigs)
+$(REDUCTION_DIR)/Tn004_S1_L001/spades_scaffolds.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/scaffolds.fasta
+	mkdir -p $(REDUCTION_DIR)
+	mkdir -p $(REDUCTION_DIR)/Tn004_S1_L001
+	cp $< $@
+
+$(REDUCTION_DIR)/Tn019_S2_L001/spades_scaffolds.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/019_spades/contigs.fasta
+	mkdir -p $(REDUCTION_DIR)
+	mkdir -p $(REDUCTION_DIR)/Tn019_S2_L001
+	cp $< $@
 	
-	
+$(REDUCTION_DIR)/%/quast_comparison/report.html : $(REDUCTION_DIR)/%/spades_scaffolds.fasta $(REDUCTION_DIR)/%/redundans/scaffolds.filled.fa
+	$(QUAST_EXE) -o $(REDUCTION_DIR)/$*/quast_comparison -l SPAdes,Redundans -s $(REDUCTION_DIR)/$*/spades_scaffolds.fasta $(REDUCTION_DIR)/$*/redundans/scaffolds.filled.fa
 
 
 ## Assembly of full dataset
