@@ -62,7 +62,7 @@ ref/%.1.bt2 : ref/%.fasta
 
 # Align reads vs IMS101
 .PHONY : IMS101_alignment
-IMS101_alignment : ref/IMS101.fasta $(FULL_IMS101_ALIGN_DIR)/aligned/Tn004_S1_L001_v_IMS101.bam  $(FULL_IMS101_ALIGN_DIR)/aligned/Tn019_S2_L001_v_IMS101.bam $(FULL_IMS101_ALIGN_DIR)/aligned/Tn004_S1_L001/qualimapReport.html $(FULL_IMS101_ALIGN_DIR)/aligned/Tn019_S2_L001/qualimapReport.html 
+IMS101_alignment : ref/IMS101.1.bt2 $(FULL_IMS101_ALIGN_DIR)/aligned/Tn004_S1_L001_v_IMS101.bam  $(FULL_IMS101_ALIGN_DIR)/aligned/Tn019_S2_L001_v_IMS101.bam $(FULL_IMS101_ALIGN_DIR)/aligned/Tn004_S1_L001/qualimapReport.html $(FULL_IMS101_ALIGN_DIR)/aligned/Tn019_S2_L001/qualimapReport.html 
 
 ref/IMS101.fasta : 
 	mkdir -p ref
@@ -70,10 +70,10 @@ ref/IMS101.fasta :
 	mv GCF_000014265.1_ASM1426v1_genomic.fna.gz ref/IMS101.fasta.gz
 	gunzip ref/IMS101.fasta.gz
 
-$(FULL_IMS101_ALIGN_DIR)/aligned/%_v_IMS101.bam : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_READ_DIR)/%_R2_trimmed.fastq.gz $(ALIGN_SRC)
+$(FULL_IMS101_ALIGN_DIR)/aligned/%_v_IMS101.bam : $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz $(ALIGN_SRC) ref/IMS101.1.bt2
 	mkdir -p $(ALIGN_DIR)
 	mkdir -p $(FULL_IMS101_ALIGN_DIR)
-	$(ALIGN_EXE) -f $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -r $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -i ref/IMS101 -a $(FULL_IMS101_ALIGN_DIR)/aligned -u $(FULL_IMS101_ALIGN_DIR)/unaligned
+	$(ALIGN_EXE) -f $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz -r $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -i ref/IMS101 -a $(FULL_IMS101_ALIGN_DIR)/aligned -u $(FULL_IMS101_ALIGN_DIR)/unaligned 2> $(FULL_IMS101_ALIGN_DIR)/aligned/$*_v_IMS101_align.log
 	
 $(FULL_IMS101_ALIGN_DIR)/aligned/%/qualimapReport.html : $(FULL_IMS101_ALIGN_DIR)/aligned/%_v_IMS101.bam
 	$(QUALIMAP_EXE) bamqc -bam $(FULL_IMS101_ALIGN_DIR)/aligned/$*_v_IMS101.bam -outdir $(FULL_IMS101_ALIGN_DIR)/aligned/$*_qualimap
@@ -82,6 +82,19 @@ $(FULL_IMS101_ALIGN_DIR)/aligned/%/qualimapReport.html : $(FULL_IMS101_ALIGN_DIR
 # Align reads vs T. theibautii H9-4
 
 # Calculate alignment statistics
+
+
+
+
+
+
+
+# 23 Sept 2016                                                                                                                                                        
+# Plan: try a couple of methods to reduce the redundancy of the Tricho assembly made previously (in read_composition/filtered_assembly/0**_spades/) to see if we can \
+get a more contiguous assembly.                                                                                                                                       
+# First, try Redundans, using the new sequencing (filtered to remove most of the contaminant) as the paired-end read dataset (this will be more useful than using the\
+ original Nextera data as the insert size is larger and more consistent).
+
 
 
 
