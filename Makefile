@@ -94,34 +94,61 @@ $(FULL_IMS101_ALIGN_DIR)/aligned/%/qualimapReport.html : $(FULL_IMS101_ALIGN_DIR
 # First, try Redundans, using the new sequencing (filtered to remove most of the contaminant) as the paired-end read dataset (this will be more useful than using the original Nextera data as the insert size is larger and more consistent).
 
 .PHONY : redundans
+<<<<<<< HEAD
 redundans : $(REDUCTION_DIR)/Tn004_S1_L001/redundans/scaffolds.filled.fa $(REDUCTION_DIR)/Tn019_S2_L001/redundans/scaffolds.filled.fa $(REDUCTION_DIR)/Tn004_S1_L001/quast_comparison/report.html $(REDUCTION_DIR)/Tn019_S2_L001/quast_comparison/report.html
 
 $(REDUCTION_DIR)/%/redundans/scaffolds.filled.fa : $(REDUCTION_DIR)/%/spades_contigs.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
 	redundans.py -v -t 8 -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(REDUCTION_DIR)/$*/spades_contigs.fasta -o $(REDUCTION_DIR)/$*/redundans
+=======
+redundans : $(REDUNDANS_DIR)/Tn004_S1_L001/scaffolds.filled.fa $(REDUNDANS_DIR)/Tn019_S2_L001/scaffolds.filled.fa $(REDUNDANS_DIR)/Tn004_S1_L001/quast_comparison/report.html $(REDUNDANS_DIR)/Tn019_S2_L001/quast_comparison/report.html
 
-$(REDUCTION_DIR)/Tn004_S1_L001/spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/contigs.fasta
+$(REDUNDANS_DIR)/%/scaffolds.filled.fa : $(REDUNDANS_DIR)/%_spades_contigs.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
+	redundans.py -v -t 8 -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(REDUNDANS_DIR)/$*_spades_contigs.fasta -o $(REDUNDANS_DIR)/$*
+>>>>>>> align_to_assembly
+
+$(REDUNDANS_DIR)/Tn004_S1_L001_spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/contigs.fasta
 	mkdir -p $(REDUCTION_DIR)
-	mkdir -p $(REDUCTION_DIR)/Tn004_S1_L001
+	mkdir -p $(REDUNDANS_DIR)
 	cp $< $@
 
-$(REDUCTION_DIR)/Tn019_S2_L001/spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/019_spades/contigs.fasta
+$(REDUNDANS_DIR)/Tn019_S2_L001_spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/019_spades/contigs.fasta
 	mkdir -p $(REDUCTION_DIR)
-	mkdir -p $(REDUCTION_DIR)/Tn019_S2_L001
+	mkdir -p $(REDUNDANS_DIR)
 	cp $< $@
 
 ## Compare redundans results with old SPAdes assemblies (compare vs scaffolds for 004, not contigs)
-$(REDUCTION_DIR)/Tn004_S1_L001/spades_scaffolds.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/scaffolds.fasta
+
+$(REDUNDANS_DIR)/Tn004_S1_L001_spades_scaffolds.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/scaffolds.fasta
 	mkdir -p $(REDUCTION_DIR)
-	mkdir -p $(REDUCTION_DIR)/Tn004_S1_L001
+	mkdir -p $(REDUNDANS_DIR)
 	cp $< $@
 
-$(REDUCTION_DIR)/Tn019_S2_L001/spades_scaffolds.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/019_spades/contigs.fasta
+$(REDUNDANS_DIR)/Tn019_S2_L001_spades_scaffolds.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/019_spades/contigs.fasta
 	mkdir -p $(REDUCTION_DIR)
-	mkdir -p $(REDUCTION_DIR)/Tn019_S2_L001
+	mkdir -p $(REDUNDANS_DIR)
 	cp $< $@
 	
-$(REDUCTION_DIR)/%/quast_comparison/report.html : $(REDUCTION_DIR)/%/spades_scaffolds.fasta $(REDUCTION_DIR)/%/redundans/scaffolds.filled.fa
-	$(QUAST_EXE) -o $(REDUCTION_DIR)/$*/quast_comparison -l SPAdes,Redundans -s $(REDUCTION_DIR)/$*/spades_scaffolds.fasta $(REDUCTION_DIR)/$*/redundans/scaffolds.filled.fa
+$(REDUNDANS_DIR)/%/quast_comparison/report.html : $(REDUNDANS_DIR)/%_spades_scaffolds.fasta $(REDUNDANS_DIR)/%/scaffolds.filled.fa
+	$(QUAST_EXE) -o $(REDUNDANS_DIR)/$*/quast_comparison -l SPAdes,Redundans -s $(REDUNDANS_DIR)/$*_spades_scaffolds.fasta $(REDUNDANS_DIR)/$*/scaffolds.filled.fa
+
+
+
+### Align filtered reads against redundans assembly. Use scaffolds >= 1kbp to start with.
+.PHONY : align_v_redundans
+align_v_redundans : $(REDUNDANS_DIR)/Tn004_S1_L001/assembly1000.fasta $(REDUNDANS_DIR)/Tn004_S1_L001/assembly1000.1.bt2 $(REDUNDANS_DIR)/Tn004_S1_L001_v_assembly1000.bam $(REDUNDANS_DIR)/Tn019_S2_L001/assembly1000.fasta $(REDUNDANS_DIR)/Tn019_S2_L001/assembly1000.1.bt2 $(REDUNDANS_DIR)/Tn019_S2_L001_v_assembly1000.bam $(REDUNDANS_DIR)/Tn004_S1_L001_v_assembly1000_qualimap/qualimapReport.html $(REDUNDANS_DIR)/Tn019_S2_L001_v_assembly1000_qualimap/qualimapReport.html 
+
+$(REDUNDANS_DIR)/%/assembly1000.fasta : $(REDUNDANS_DIR)/%/scaffolds.filled.fa scripts/filter_contigs_by_size.py
+	python scripts/filter_contigs_by_size.py $(REDUNDANS_DIR)/$*/scaffolds.filled.fa 1000 $@
+	
+$(REDUNDANS_DIR)/%/assembly1000.1.bt2 : $(REDUNDANS_DIR)/%/assembly1000.fasta
+	bowtie2-build $< $(REDUNDANS_DIR)/$*/assembly1000
+
+$(REDUNDANS_DIR)/%_v_assembly1000.bam : $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz $(ALIGN_SRC) $(REDUNDANS_DIR)/%/assembly1000.1.bt2
+	$(ALIGN_EXE) -f $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz -r $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -i $(REDUNDANS_DIR)/$*/assembly1000 -a $(REDUNDANS_DIR)/ -u $(REDUNDANS_DIR)/ 2> $(REDUNDANS_DIR)/$*_v_assembly1000_align.log
+	
+$(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(REDUNDANS_DIR)/%_assembly1000.bam
+	$(QUALIMAP_EXE) bamqc -bam $< -outdir $(REDUNDANS_DIR)/$*_qualimap
+
 
 
 ## Assembly of full dataset
