@@ -12,6 +12,7 @@ FILTER_QUAL_DIR=$(FILTER_DIR)/QC
 ALIGN_DIR=alignment
 FULL_IMS101_ALIGN_DIR=$(ALIGN_DIR)/full_dataset_v_IMS101
 
+REDUCTION_DIR=assembly_reduction
 
 # Scripts
 TRIM_SRC=scripts/run_cutadapt.py

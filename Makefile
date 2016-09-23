@@ -90,12 +90,26 @@ $(FULL_IMS101_ALIGN_DIR)/aligned/%/qualimapReport.html : $(FULL_IMS101_ALIGN_DIR
 
 
 # 23 Sept 2016                                                                                                                                                        
-# Plan: try a couple of methods to reduce the redundancy of the Tricho assembly made previously (in read_composition/filtered_assembly/0**_spades/) to see if we can \
-get a more contiguous assembly.                                                                                                                                       
-# First, try Redundans, using the new sequencing (filtered to remove most of the contaminant) as the paired-end read dataset (this will be more useful than using the\
- original Nextera data as the insert size is larger and more consistent).
+# Plan: try a couple of methods to reduce the redundancy of the Tricho assembly made previously (in read_composition/filtered_assembly/0**_spades/) to see if we can get a more contiguous assembly.                                                                                                                                       
+# First, try Redundans, using the new sequencing (filtered to remove most of the contaminant) as the paired-end read dataset (this will be more useful than using the original Nextera data as the insert size is larger and more consistent).
 
+.PHONY : redundans
+redundans : $(REDUCTION_DIR)/Tn004_S1_L001/redundans/scaffolds.filled.fa $(REDUCTION_DIR)/Tn019_S2_L001/redundans/scaffolds.filled.fa
 
+$(REDUCTION_DIR)/%/redundans/scaffolds.filled.fa : $(REDUCTION_DIR)/%/spades_contigs.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
+	redundans.py -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(REDUCTION_DIR)/$*/spades_contigs.fasta -o $(REDUCTION_DIR)/$*/redundans
+
+$(REDUCTION_DIR)/Tn004_S1_L001/spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/004_spades/contigs.fasta
+	mkdir -p $(REDUCTION_DIR)
+	mkdir -p $(REDUCTION_DIR)/Tn004_S1_L001
+	cp $< $@
+
+$(REDUCTION_DIR)/Tn019_S2_L001/spades_contigs.fasta : ../CV_samples_nextera/read_composition/filtered_assembly/019_spades/contigs.fasta
+	mkdir -p $(REDUCTION_DIR)
+	mkdir -p $(REDUCTION_DIR)/Tn019_S2_L001
+	cp $< $@
+	
+	
 
 
 ## Assembly of full dataset
