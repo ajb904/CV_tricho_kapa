@@ -149,7 +149,7 @@ $(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(REDUNDANS_DIR)/%.bam
 # Then Redundans scaffolding and gap closing module to assemble into longer scaffolds? Then redo alignment of reads to scaffolds and see if the results are similar
 
 .PHONY : cdhit
-cdhit : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S1_L001_v_cdhit.bam $(REDUNDANS_DIR)/Tn004_S1_L001_v_cdhit_qualimap/qualimapReport.html $(REDUNDANS_DIR)/Tn019_S2_L001_v_cdhit_qualimap/qualimapReport.html
+cdhit : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.bam $(REDUNDANS_DIR)/Tn004_S1_L001_v_cdhit_qualimap/qualimapReport.html $(REDUNDANS_DIR)/Tn019_S2_L001_v_cdhit_qualimap/qualimapReport.html
 
 #$(CDHIT_DIR)/Tn004_S1_L001-cdhit90.fasta $(CDHIT_DIR)/Tn019_S2_L001-cdhit90.fasta
 
