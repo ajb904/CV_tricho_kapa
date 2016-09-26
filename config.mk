@@ -15,6 +15,8 @@ FULL_IMS101_ALIGN_DIR=$(ALIGN_DIR)/full_dataset_v_IMS101
 REDUCTION_DIR=assembly_reduction
 REDUNDANS_DIR=$(REDUCTION_DIR)/redundans
 
+CDHIT_DIR=$(REDUCTION_DIR)/cdhit
+
 # Scripts
 TRIM_SRC=scripts/run_cutadapt.py
 TRIM_EXE=python $(TRIM_SRC)
