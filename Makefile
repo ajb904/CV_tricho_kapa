@@ -155,7 +155,7 @@ cdhit : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S1_L001_v_cdhi
 
 $(CDHIT_DIR)/%-cdhit90.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
 	mkdir -p $(CDHIT_DIR)
-	cd-hit-est -i $(REDUNDANS_DIR)/$*_spades_contigs.fasta -o $(CDHIT_DIR)/$*-cdhit90.fasta -c 0.9 -n 8 -d 0 -M 32000 -T 0
+	$(CDHIT_EXE) -i $(REDUNDANS_DIR)/$*_spades_contigs.fasta -o $(CDHIT_DIR)/$*-cdhit90.fasta -c 0.9 -n 8 -d 0 -M 32000 -T 0
 	
 $(CDHIT_DIR)/%_redundans/scaffolds.filled.fa : $(CDHIT_DIR)/%-cdhit90.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
 	redundans.py -t 8 -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(CDHIT_DIR)/$*-cdhit90.fasta -o $(CDHIT_DIR)/$*_redundans --noreduction
