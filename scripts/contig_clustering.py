@@ -34,7 +34,9 @@ def run_CDHIT(fasta, identity, outdir, cov=1.0):
 
     stdout = proc.communicate()[0]
 
+    num_clusters=0
     for line in stdout:
+        print line
         if line.endswith('clusters'):
             num_clusters = line.split[3]
 
