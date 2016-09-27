@@ -1,5 +1,7 @@
 include config.mk
 
+.SECONDARY :
+
 .PHONY : all
 all : quality_check_raw trim quality_check_trimmed IMS101_alignment
 
