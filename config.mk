@@ -35,6 +35,8 @@ QUALIMAP_EXE=~/Downloads/qualimap_v2.2/qualimap
 QUAST_EXE=~/Downloads/quast-4.0/quast.py
 
 CDHIT_EXE=~/Downloads/cd-hit-v4.6.6-2016-0711/cd-hit-est
+CDHIT_CLUSTER_SRC=scripts/contig_clustering.py
+CDHIT_CLUSTER_EXE=python $(CDHIT_CLUSTER_SRC)
 
 #Variables
 RAW_READS=$(wildcard $(RAW_READ_DIR)/*_001.fastq.gz)

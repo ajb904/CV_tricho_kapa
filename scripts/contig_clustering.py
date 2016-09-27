@@ -3,7 +3,7 @@
 import subprocess
 import os
 from Bio import SeqIO
-
+import argparse
 
 # Cluster contigs from an assembly using CD-HIT-EST at a variety of different identity levels. Shorter contigs
 # should match longer contigs over 100% of their length
@@ -29,6 +29,8 @@ def run_CDHIT(fasta, identity, word_size, outdir, cov=1.0):
 
     cdhit_cline = ' '.join(cdhit_cline)
 
+    print "Running: %s" % cdhit_cline
+
     #Only run clustering if result file doesn't exist
     if not os.path.exists(outfile):
         subprocess.call(cdhit_cline, shell=True)
@@ -48,7 +50,8 @@ def count_clusters(clustered_file, size_threshold):
     return seq_count
 
 def get_outfile(fasta, percent_id, outdir):
-    outfile = fasta.replace('.fasta', '%d.fasta' % percent_id)
+    infilename = os.path.basename(fasta)
+    outfile = infilename.replace('.fasta', '%d.fasta' % percent_id)
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -57,13 +60,20 @@ def get_outfile(fasta, percent_id, outdir):
     return outfile
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--fasta", help="Fasta file containing sequences to be clustered", required=True)
+    parser.add_argument("-t", "--tmpdir", help="Directory for clustering output", required=True)
+    parser.add_argument("-o", "--outfile", help="Result file", required=True)
+
+    args = parser.parse_args()
+
     percents = range(75, 101, 5)
     word_sizes = range(4, 11)
 
-    input_fasta = 'temp.fasta'
-    outdir = 'test'
+    input_fasta = args.fasta
+    outdir = args.tmpdir
 
-    result_file = open('test_clustering_results.txt', 'w')
+    result_file = open(args.outfile, 'w')
 
     thresholds_to_check = [0, 200, 500, 1000, 2000, 5000, 10000]
 

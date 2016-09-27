@@ -149,9 +149,8 @@ $(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(REDUNDANS_DIR)/%.bam
 # Then Redundans scaffolding and gap closing module to assemble into longer scaffolds? Then redo alignment of reads to scaffolds and see if the results are similar
 
 .PHONY : cdhit
-cdhit : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.bam $(REDUNDANS_DIR)/Tn004_S1_L001_v_cdhit_qualimap/qualimapReport.html $(REDUNDANS_DIR)/Tn019_S2_L001_v_cdhit_qualimap/qualimapReport.html
+cdhit : $(CDHIT_DIR)/Tn004_S1_L001-cdhit90.fasta $(CDHIT_DIR)/Tn019_S2_L001-cdhit90.fasta $(CDHIT_DIR)/Tn004_S1_L001_redundans/cdhit1000.fa $(CDHIT_DIR)/Tn019_S2_L001_redundans/cdhit1000.fa $(CDHIT_DIR)/Tn004_S1_L001_redundans/scaffolds.filled.fa $(CDHIT_DIR)/Tn019_S2_L001_redundans/scaffolds.filled.fa $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.bam $(REDUNDANS_DIR)/Tn004_S1_L001_v_cdhit_qualimap/qualimapReport.html $(REDUNDANS_DIR)/Tn019_S2_L001_v_cdhit_qualimap/qualimapReport.html
 
-#$(CDHIT_DIR)/Tn004_S1_L001-cdhit90.fasta $(CDHIT_DIR)/Tn019_S2_L001-cdhit90.fasta
 
 $(CDHIT_DIR)/%-cdhit90.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
 	mkdir -p $(CDHIT_DIR)
@@ -160,14 +159,29 @@ $(CDHIT_DIR)/%-cdhit90.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
 $(CDHIT_DIR)/%_redundans/scaffolds.filled.fa : $(CDHIT_DIR)/%-cdhit90.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
 	redundans.py -t 8 -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(CDHIT_DIR)/$*-cdhit90.fasta -o $(CDHIT_DIR)/$*_redundans --noreduction
 	
+$(CDHIT_DIR)/%_redundans/cdhit1000.fa : $(CDHIT_DIR)/%_redundans/scaffolds.filled.fa scripts/filter_contigs_by_size.py
+	python scripts/filter_contigs_by_size.py $(REDUNDANS_DIR)/$*/scaffolds.filled.fa 1000 $@
+	
 $(CDHIT_DIR)/%_v_cdhit.bam : $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz $(ALIGN_SRC) $(CDHIT_DIR)/%_redundans/cdhit.1.bt2
 	$(ALIGN_EXE) -f $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz -r $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -i $(CDHIT_DIR)/$*_redundans/cdhit -a $(CDHIT_DIR)/ -u $(CDHIT_DIR)/ 2> $(CDHIT_DIR)/$*_v_cdhit_align.log
 
-$(CDHIT_DIR)/%_redundans/cdhit.1.bt2 : $(CDHIT_DIR)/%_redundans/scaffolds.filled.fa
+$(CDHIT_DIR)/%_redundans/cdhit.1.bt2 : $(CDHIT_DIR)/%_redundans/cdhit1000.fa
 	bowtie2-build $< $(CDHIT_DIR)/$*_redundans/cdhit
 
 $(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(CDHIT_DIR)/%.bam
 	$(QUALIMAP_EXE) bamqc -bam $< -outdir $(CDHIT_DIR)/$*_qualimap
+
+
+.PHONY : cdhit_cluster_counts
+cdhit_cluster_counts : $(CDHIT_DIR)/cluster_counts/Tn004_S1_L001_clusters.txt $(CDHIT_DIR)/cluster_counts/Tn019_S2_L001_clusters.txt
+
+$(CDHIT_DIR)/cluster_counts/%_clusters.txt : $(CDHIT_DIR)/cluster_counts/%.fasta $(CDHIT_CLUSTER_SRC)
+	$(CDHIT_CLUSTER_EXE) -i $(CDHIT_DIR)/cluster_counts/$*.fasta -t $(CDHIT_DIR)/cluster_counts/clusters -o $@
+	
+$(CDHIT_DIR)/cluster_counts/%.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
+	mkdir -p $(CDHIT_DIR)/cluster_counts
+	cp $< $@
+	
 
 
 
