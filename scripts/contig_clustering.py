@@ -29,18 +29,20 @@ def run_CDHIT(fasta, identity, word_size, outdir, cov=1.0):
 
     cdhit_cline = ' '.join(cdhit_cline)
 
-    subprocess.call(cdhit_cline, shell=True)
+    #Only run clustering if result file doesn't exist
+    if not os.path.exists(outfile):
+        subprocess.call(cdhit_cline, shell=True)
 
     return outfile
 
-def get_num_clusters(clustered_file, size_threshold):
+def count_clusters(clustered_file, size_threshold):
     #Return number of clusters in a file that are greater than a specified size)
 
     fasta = SeqIO.parse(clustered_file, 'fasta')
 
     seq_count = 0
     for seq in fasta:
-        if len(seq.seq) > int(size_threshold):
+        if len(seq.seq) >= int(size_threshold):
             seq_count += 1
 
     return seq_count
@@ -61,10 +63,25 @@ if __name__=='__main__':
     input_fasta = 'temp.fasta'
     outdir = 'test'
 
+    result_file = open('test_clustering_results.txt', 'w')
+
+    thresholds_to_check = [0, 200, 500, 1000, 2000, 5000, 10000]
+
+    result_file.write('Identity' + ('\tContigs.gt.%dbp' * len(thresholds_to_check)) % tuple(thresholds_to_check) + '\n')
+
     for p, ws in zip(percents, word_sizes):
         identity = float(p)/100
 
         clustered_file = run_CDHIT(input_fasta, identity, ws, outdir)
-        print clustered_file
 
-        print get_num_clusters(clustered_file, 1000)
+        cluster_counts = []
+        for threshold in thresholds_to_check:
+            cluster_count = count_clusters(clustered_file, threshold)
+            cluster_counts.append(cluster_count)
+
+        outline = str(p) + '\t%d' * len(cluster_counts) % tuple(cluster_counts) + '\n' 
+
+        result_file.write(outline)
+
+    result_file.close()
+            
