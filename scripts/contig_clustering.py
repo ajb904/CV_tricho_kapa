@@ -19,7 +19,7 @@ def run_CDHIT(fasta, identity, word_size, outdir, cov=1.0):
     cdhit_cline = [CD_HIT_EST,
                    '-i', fasta,
                    '-o', outfile,
-                   '-c', '%.1f' % float(identity),
+                   '-c', '%.2f' % float(identity),
                    '-n', str(word_size),
                    '-aS', '1.0',
                    '-d', '0',
@@ -67,8 +67,8 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    percents = range(75, 101, 5)
-    word_sizes = range(4, 11)
+    percents = range(80, 101, 5)
+    word_sizes = range(5, 11)
 
     input_fasta = args.fasta
     outdir = args.tmpdir

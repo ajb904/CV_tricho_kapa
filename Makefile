@@ -174,6 +174,7 @@ $(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(CDHIT_DIR)/%.bam
 	$(QUALIMAP_EXE) bamqc -bam $< -outdir $(CDHIT_DIR)/$*_qualimap
 
 
+
 .PHONY : cdhit_cluster_counts
 cdhit_cluster_counts : $(CDHIT_DIR)/cluster_counts/Tn004_S1_L001_clusters.txt $(CDHIT_DIR)/cluster_counts/Tn019_S2_L001_clusters.txt
 
