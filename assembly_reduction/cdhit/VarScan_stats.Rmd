@@ -10,7 +10,7 @@ library(ggplot2)
 library(plyr)
 library(reshape2)
 
-df <- read.delim('Tn019_S2_L001_v_cdhit.VarScanCNS.tab', header=TRUE)
+df <- read.delim('Tn004_S1_L001_v_cdhit.VarScanSNPs.tab', header=TRUE)
 
 df <- cbind(colsplit(df$Chrom, '\\|size', c("Chrom", "ContigLength")), df[2:19])
 
@@ -25,7 +25,7 @@ Summary data
 
 ```{r, summarise_data}
 av <- ddply(ss, 'Chrom', summarise, 
-            medCov=median(Reads1+Reads2), 
+            medCov=median(Reads1+Reads2),
             medVar=median(MinorAlleleFreq),
             ContigLength=mean(ContigLength),
             totalVars=length(MinorAlleleFreq)
@@ -37,7 +37,14 @@ av['SNPrate'] <- av$totalVars/av$ContigLength
 Summary plots
 
 ```{r, summary_plots}
-ggplot(av, aes(x=SNPrate)) + geom_density()
 ggplot(av, aes(x=medCov)) + geom_density()
-ggplot(av, aes(x=medVar)) + geom_density()
+ggplot(av, aes(x=medCov)) + geom_density() + scale_x_continuous(limits = c(0,250))
+
+av.ss <- subset(av, medCov < 150)
+
+ggplot(av.ss, aes(x=SNPrate*100)) + geom_density()
+ggplot(av.ss, aes(x=medVar)) + geom_density()
+
 ```
+
+
