@@ -1,5 +1,7 @@
 include config.mk
 
+.SECONDARY :
+
 .PHONY : all
 all : quality_check_raw trim quality_check_trimmed IMS101_alignment
 
@@ -170,6 +172,19 @@ $(CDHIT_DIR)/%_redundans/cdhit.1.bt2 : $(CDHIT_DIR)/%_redundans/cdhit1000.fa
 
 $(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(CDHIT_DIR)/%.bam
 	$(QUALIMAP_EXE) bamqc -bam $< -outdir $(CDHIT_DIR)/$*_qualimap
+
+
+
+.PHONY : cdhit_cluster_counts
+cdhit_cluster_counts : $(CDHIT_DIR)/cluster_counts/Tn004_S1_L001_clusters.txt $(CDHIT_DIR)/cluster_counts/Tn019_S2_L001_clusters.txt
+
+$(CDHIT_DIR)/cluster_counts/%_clusters.txt : $(CDHIT_DIR)/cluster_counts/%.fasta $(CDHIT_CLUSTER_SRC)
+	$(CDHIT_CLUSTER_EXE) -i $(CDHIT_DIR)/cluster_counts/$*.fasta -t $(CDHIT_DIR)/cluster_counts/clusters -o $@
+	
+$(CDHIT_DIR)/cluster_counts/%.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
+	mkdir -p $(CDHIT_DIR)/cluster_counts
+	cp $< $@
+	
 
 
 
