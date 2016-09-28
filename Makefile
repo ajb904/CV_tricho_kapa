@@ -182,7 +182,7 @@ $(CDHIT_DIR)/%_redundans/quast_comparison/report.html : $(REDUNDANS_DIR)/%_spade
 cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanSNPs.tab
 
 $(CDHIT_DIR)/%_v_cdhit.VarScanSNPs.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
-	samtools mpileup -f $^ | java -jar VarScan.v2.2.jar pileup2snp > $@
+	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2snp > $@
 
 
 
