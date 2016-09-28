@@ -151,12 +151,12 @@ $(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(REDUNDANS_DIR)/%.bam
 # Then Redundans scaffolding and gap closing module to assemble into longer scaffolds? Then redo alignment of reads to scaffolds and see if the results are similar
 
 .PHONY : cdhit
-cdhit : $(CDHIT_DIR)/Tn004_S1_L001-cdhit90.fasta $(CDHIT_DIR)/Tn019_S2_L001-cdhit90.fasta $(CDHIT_DIR)/Tn004_S1_L001_redundans/cdhit1000.fa $(CDHIT_DIR)/Tn019_S2_L001_redundans/cdhit1000.fa $(CDHIT_DIR)/Tn004_S1_L001_redundans/scaffolds.filled.fa $(CDHIT_DIR)/Tn019_S2_L001_redundans/scaffolds.filled.fa $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.bam $(REDUNDANS_DIR)/Tn004_S1_L001_v_cdhit_qualimap/qualimapReport.html $(REDUNDANS_DIR)/Tn019_S2_L001_v_cdhit_qualimap/qualimapReport.html
+cdhit : $(CDHIT_DIR)/Tn004_S1_L001-cdhit90.fasta $(CDHIT_DIR)/Tn019_S2_L001-cdhit90.fasta $(CDHIT_DIR)/Tn004_S1_L001_redundans/cdhit1000.fa $(CDHIT_DIR)/Tn019_S2_L001_redundans/cdhit1000.fa $(CDHIT_DIR)/Tn004_S1_L001_redundans/scaffolds.filled.fa $(CDHIT_DIR)/Tn019_S2_L001_redundans/scaffolds.filled.fa $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.bam $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.bam $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit_qualimap/qualimapReport.html $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit_qualimap/qualimapReport.html $(CDHIT_DIR)/Tn004_S1_L001_redundans/quast_comparison/report.html $(CDHIT_DIR)/Tn019_S2_L001_redundans/quast_comparison/report.html 
 
 
 $(CDHIT_DIR)/%-cdhit90.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
 	mkdir -p $(CDHIT_DIR)
-	$(CDHIT_EXE) -i $(REDUNDANS_DIR)/$*_spades_contigs.fasta -o $(CDHIT_DIR)/$*-cdhit90.fasta -c 0.9 -n 8 -d 0 -M 32000 -T 0
+	$(CDHIT_EXE) -i $(REDUNDANS_DIR)/$*_spades_contigs.fasta -o $(CDHIT_DIR)/$*-cdhit90.fasta -c 0.9 -n 8 -d 0 -M 32000 -T 0 -aS 1.0
 	
 $(CDHIT_DIR)/%_redundans/scaffolds.filled.fa : $(CDHIT_DIR)/%-cdhit90.fasta $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/%_R2_trimmed.filtered.fastq.gz
 	redundans.py -t 8 -i $(FILTER_READ_DIR)/$*_R1_trimmed.filtered.fastq.gz $(FILTER_READ_DIR)/$*_R2_trimmed.filtered.fastq.gz -f $(CDHIT_DIR)/$*-cdhit90.fasta -o $(CDHIT_DIR)/$*_redundans --noreduction
@@ -170,8 +170,19 @@ $(CDHIT_DIR)/%_v_cdhit.bam : $(FILTER_READ_DIR)/%_R1_trimmed.filtered.fastq.gz $
 $(CDHIT_DIR)/%_redundans/cdhit.1.bt2 : $(CDHIT_DIR)/%_redundans/cdhit1000.fa
 	bowtie2-build $< $(CDHIT_DIR)/$*_redundans/cdhit
 
-$(REDUNDANS_DIR)/%_qualimap/qualimapReport.html : $(CDHIT_DIR)/%.bam
+$(CDHIT_DIR)/%_qualimap/qualimapReport.html : $(CDHIT_DIR)/%.bam
 	$(QUALIMAP_EXE) bamqc -bam $< -outdir $(CDHIT_DIR)/$*_qualimap
+
+$(CDHIT_DIR)/%_redundans/quast_comparison/report.html : $(REDUNDANS_DIR)/%_spades_scaffolds.fasta $(REDUNDANS_DIR)/%/scaffolds.filled.fa $(CDHIT_DIR)/%_redundans/scaffolds.filled.fa
+	$(QUAST_EXE) -o $(CDHIT_DIR)/$*_redundans/quast_comparison -l SPAdes,Redundans,CDHIT+Redundans -s $(REDUNDANS_DIR)/$*_spades_scaffolds.fasta $(REDUNDANS_DIR)/$*/scaffolds.filled.fa $(CDHIT_DIR)/$*_redundans/scaffolds.filled.fa
+
+
+
+.PHONY : cdhit_snp_rate
+cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanSNPs.tab
+
+$(CDHIT_DIR)/%_v_cdhit.VarScanSNPs.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
+	samtools mpileup -f $^ | java -jar VarScan.v2.2.jar pileup2snp > $@
 
 
 
