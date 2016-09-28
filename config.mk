@@ -38,7 +38,7 @@ CDHIT_EXE=~/Downloads/cd-hit-v4.6.6-2016-0711/cd-hit-est
 CDHIT_CLUSTER_SRC=scripts/contig_clustering.py
 CDHIT_CLUSTER_EXE=python $(CDHIT_CLUSTER_SRC)
 
-VARSCAN_SRC=~/Downloads/VarScan.v2.3.9.jar
+VARSCAN_SRC=~/Downloads/varscan/VarScan.v2.4.2.jar
 VARSCAN_EXE=java -jar $(VARSCAN_SRC)
 
 #Variables

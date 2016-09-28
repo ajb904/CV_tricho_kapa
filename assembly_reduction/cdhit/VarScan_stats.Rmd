@@ -1,0 +1,43 @@
+---
+title: "VarScan_stats"
+author: "Alison Baylay"
+date: "28 September 2016"
+output: html_document
+---
+
+```{r load_data}
+library(ggplot2)
+library(plyr)
+library(reshape2)
+
+df <- read.delim('Tn019_S2_L001_v_cdhit.VarScanCNS.tab', header=TRUE)
+
+df <- cbind(colsplit(df$Chrom, '\\|size', c("Chrom", "ContigLength")), df[2:19])
+
+df$VarFreq <- as.numeric(gsub('%','',df$VarFreq))
+
+df['MinorAlleleFreq'] <- ifelse(df$VarFreq <= 50, df$VarFreq, 100-df$VarFreq)
+
+ss <- subset(df, Strands1 == 2 & Strands2 == 2)
+```
+
+Summary data
+
+```{r, summarise_data}
+av <- ddply(ss, 'Chrom', summarise, 
+            medCov=median(Reads1+Reads2), 
+            medVar=median(MinorAlleleFreq),
+            ContigLength=mean(ContigLength),
+            totalVars=length(MinorAlleleFreq)
+            )
+
+av['SNPrate'] <- av$totalVars/av$ContigLength
+```
+
+Summary plots
+
+```{r, summary_plots}
+ggplot(av, aes(x=SNPrate)) + geom_density()
+ggplot(av, aes(x=medCov)) + geom_density()
+ggplot(av, aes(x=medVar)) + geom_density()
+```

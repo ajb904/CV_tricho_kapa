@@ -179,11 +179,16 @@ $(CDHIT_DIR)/%_redundans/quast_comparison/report.html : $(REDUNDANS_DIR)/%_spade
 
 
 .PHONY : cdhit_snp_rate
-cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanSNPs.tab
+cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNS.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanCNS.tab $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNSfull.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanCNSfull.tab
 
 $(CDHIT_DIR)/%_v_cdhit.VarScanSNPs.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
-	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2snp > $@
+	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2snp --p-value 0.01 > $@
 
+$(CDHIT_DIR)/%_v_cdhit.VarScanCNSfull.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
+	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2cns > $@
+
+$(CDHIT_DIR)/%_v_cdhit.VarScanCNS.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
+	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2cns --variants 1 > $@
 
 
 .PHONY : cdhit_cluster_counts
