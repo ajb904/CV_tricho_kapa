@@ -12,14 +12,16 @@ library(RColorBrewer)
 library(ggplot2)
 ```
 
+## Get fasta data
 ```{r}
 Tn004.fasta <- readDNAStringSet('Tn004_S1_L001_redundans/cdhit1000.fa')
+```
 
-Tn004.2kb <- Tn004.fasta[width(Tn004.fasta) >= 2000]
+## Dinucleotide frequency clustering
+```{r dinucleotide_frequency}
+tet <- oligonucleotideFrequency(Tn004.fasta, 2, as.prob = T)
 
-tet <- oligonucleotideFrequency(Tn004.2kb, 2, as.prob = T)
-
-rownames(tet) <- names(Tn004.2kb)
+rownames(tet) <- names(Tn004.fasta)
 
 cl <- hclust(dist(tet), method='ward.D2')
 plot(as.dendrogram(cl), leaflab='none')
@@ -33,27 +35,24 @@ plot(as.dendrogram(cl), leaflab='none')
 #heatmap.2(tet, dendrogram = 'row', Rowv = as.dendrogram(cl), trace = 'none', labRow = '', scale='row', col=hmcol, lhei = c(0.5, 4), RowSideColors = lab.col[scaled.sizes])
 ```
 
+PCA plot - how well does clustering match up with this?
 ```{r pca}
-cl.split <- cutree(cl, 4)
+cl.split <- cutree(cl, 5)
 table(cl.split)
 
 tet.pca <- prcomp(tet, center = T, scale. = T)
 plot(tet.pca, type='l')
 
-scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn004.2kb), cluster=cl.split)
+scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn004.fasta), cluster=cl.split)
 qplot(x=PC1, y=PC2, data=scores, col=as.factor(cluster))
 qplot(x=PC1, y=PC3, data=scores, col=as.factor(cluster))
 qplot(x=PC2, y=PC3, data=scores, col=as.factor(cluster))
 ```
 
-```{r get_outliers}
-Tn004.cluster4 = Tn004.2kb[cl.split==4]
-writeXStringSet(Tn004.cluster4, file='Tn004_cluster4.fasta', format = 'fasta', width=60)
-```
-
+Map dinucleotide frequency data onto contig coverage and SNP rate
 ```{r load_varscan_data}
-fullSummary <- read.delim(covSNP_summary_file, header=T)
-clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn004.2kb)),
+fullSummary <- read.delim('Varscan.CovSNPrate.summary.tab', header=T)
+clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn004.fasta)),
                           cluster = cl.split)
 
 allData <- merge(subset(fullSummary, Sample=='Tn004'), clusterData, by = 'Chrom', all.x=T)
@@ -61,4 +60,49 @@ allData[is.na(allData$cluster),'cluster'] <- 0
 
 #Coverage distributions
 ggplot(allData, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 150)) + geom_freqpoly(aes(x=medCov, col=as.factor(cluster)), binwidth=5, size=2)
+
+#SNP rate distrubutions
+ggplot(allData, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, col='black') + geom_freqpoly(aes(x=SNPrate*100, col=as.factor(cluster)), binwidth=0.5, size=2) + scale_x_continuous(limits = c(0,10))
+```
+
+## Repeat using tetranucleotide frequency
+```{r tetranucleotide_frequency}
+tet <- oligonucleotideFrequency(Tn004.fasta, 4, as.prob = T)
+rownames(tet) <- names(Tn004.fasta)
+
+cl <- hclust(dist(tet), method='ward.D2')
+plot(as.dendrogram(cl), leaflab='none')
+```
+
+```{r tetra_pca}
+cl.split <- cutree(cl, 4)
+table(cl.split)
+
+tet.pca <- prcomp(tet, center = T, scale. = T)
+plot(tet.pca, type='l')
+
+scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn004.fasta), cluster=cl.split)
+qplot(x=PC1, y=PC2, data=scores, col=as.factor(cluster))
+qplot(x=PC1, y=PC3, data=scores, col=as.factor(cluster))
+qplot(x=PC2, y=PC3, data=scores, col=as.factor(cluster))
+```
+
+```{r tetra_varscan}
+clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn004.fasta)),
+                          cluster = cl.split)
+
+allData <- merge(subset(fullSummary, Sample=='Tn004'), clusterData, by = 'Chrom', all.x=T)
+allData[is.na(allData$cluster),'cluster'] <- 0
+
+#Coverage distributions
+ggplot(allData, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 150)) + geom_freqpoly(aes(x=medCov, col=as.factor(cluster)), binwidth=5, size=2)
+
+#SNP rate distrubutions
+ggplot(allData, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, col='black') + geom_freqpoly(aes(x=SNPrate*100, col=as.factor(cluster)), binwidth=0.5, size=2) + scale_x_continuous(limits = c(0,10))
+```
+
+
+```{r get_outliers}
+#Tn004.cluster5 = Tn004.fasta[cl.split==5]
+#writeXStringSet(Tn004.cluster5, file='Tn004_odd_cluster.fasta', format = 'fasta', width=60)
 ```
