@@ -1,0 +1,64 @@
+---
+title: "tetranucleotide frequencies"
+author: "Alison Baylay"
+date: "30 September 2016"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(Biostrings)
+library(gplots)
+library(RColorBrewer)
+library(ggplot2)
+```
+
+```{r}
+Tn004.fasta <- readDNAStringSet('Tn004_S1_L001_redundans/cdhit1000.fa')
+
+Tn004.2kb <- Tn004.fasta[width(Tn004.fasta) >= 2000]
+
+tet <- oligonucleotideFrequency(Tn004.2kb, 2, as.prob = T)
+
+rownames(tet) <- names(Tn004.2kb)
+
+cl <- hclust(dist(tet), method='ward.D2')
+plot(as.dendrogram(cl), leaflab='none')
+```
+
+```{r heatmap, fig.height=16, fig.width=8}
+#hmcol <- rev(colorRampPalette(brewer.pal(9, "YlGnBu"))(255))
+#lab.col <- colorRampPalette(brewer.pal(9, 'RdPu'))(255)
+#scaled.sizes <- trunc(width(Tn004.2kb)/max(width(Tn004.2kb))*255)
+
+#heatmap.2(tet, dendrogram = 'row', Rowv = as.dendrogram(cl), trace = 'none', labRow = '', scale='row', col=hmcol, lhei = c(0.5, 4), RowSideColors = lab.col[scaled.sizes])
+```
+
+```{r pca}
+cl.split <- cutree(cl, 4)
+table(cl.split)
+
+tet.pca <- prcomp(tet, center = T, scale. = T)
+plot(tet.pca, type='l')
+
+scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn004.2kb), cluster=cl.split)
+qplot(x=PC1, y=PC2, data=scores, col=as.factor(cluster))
+qplot(x=PC1, y=PC3, data=scores, col=as.factor(cluster))
+qplot(x=PC2, y=PC3, data=scores, col=as.factor(cluster))
+```
+
+```{r get_outliers}
+Tn004.cluster4 = Tn004.2kb[cl.split==4]
+writeXStringSet(Tn004.cluster4, file='Tn004_cluster4.fasta', format = 'fasta', width=60)
+```
+
+```{r load_varscan_data}
+fullSummary <- read.delim(covSNP_summary_file, header=T)
+clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn004.2kb)),
+                          cluster = cl.split)
+
+allData <- merge(subset(fullSummary, Sample=='Tn004'), clusterData, by = 'Chrom', all.x=T)
+allData[is.na(allData$cluster),'cluster'] <- 0
+
+#Coverage distributions
+ggplot(allData, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 150)) + geom_freqpoly(aes(x=medCov, col=as.factor(cluster)), binwidth=5, size=2)
+```

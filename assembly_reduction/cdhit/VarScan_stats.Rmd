@@ -5,18 +5,89 @@ date: "28 September 2016"
 output: html_document
 ---
 
-```{r load_data}
+```{r setup}
 library(ggplot2)
 library(plyr)
 library(reshape2)
+library(data.table)
+```
 
-df <- read.delim('Tn004_S1_L001_v_cdhit.VarScanSNPs.tab', header=TRUE)
+First, use full dataset to get median coverage and SNP rate for every contig (so that we include the ones that don't have SNPs). The datasets are huge, so we will only read the columns we need (1, 2, 5, 6, 7, 8, 9, 12), then save the summarised data to a file so that it can be opened much quicker if we run this again.
+```{r load_full_data}
+covSNP_summary_file = 'Varscan.CovSNPrate.summary.tab'
 
-df <- cbind(colsplit(df$Chrom, '\\|size', c("Chrom", "ContigLength")), df[2:19])
+if (file.exists(covSNP_summary_file)) {
+    
+    fullSummary <- read.delim(covSNP_summary_file, header=T)
+
+} else {
+    
+    cols <- c(1,2,5,6,7,8,9,12)
+    full004 <- fread('Tn004_S1_L001_v_cdhit.VarScanCNSfull.tab', header = T, sep = '\t', select = cols, data.table=F, colClasses = 'character')
+    
+    full019 <- fread('Tn019_S2_L001_v_cdhit.VarScanCNSfull.tab', header = T, sep = '\t', select = cols, data.table=F, colClasses = 'character')
+    
+    full004['Sample'] <- 'Tn004'
+    full019['Sample'] <- 'Tn019'
+
+    full <- rbind(full004, full019)
+    
+    class(full$Reads1) <- 'integer'
+    class(full$Reads2) <- 'integer'
+    class(full$Strands1) <- 'integer'
+    class(full$Strands2) <- 'integer'
+    class(full$Pvalue) <- 'numeric'
+    
+
+    fullSummary <- ddply(full, c('Sample', 'Chrom'), summarise,
+                         medCov = median(Reads1+Reads2),
+                         totalVars = sum(Strands1 == 2 & Strands2 == 2 & Pvalue < 0.01))
+
+    fullSummary <- cbind(Sample=fullSummary[,1], colsplit(fullSummary$Chrom, '\\|size', c('Chrom','ContigLength')), fullSummary[,3:4])
+    
+    fullSummary[,"SNPrate"] <- fullSummary$totalVars/fullSummary$ContigLength
+
+    write.table(fullSummary, file = covSNP_summary_file, quote=F, row.names = F, col.names = T, sep='\t')
+
+}
+```
+
+
+
+Plot coverage distribution for all contigs. Also, what is the SNP rate distribution - do we see contigs with no SNPs?
+
+```{r full_summary_plots}
+#Coverage distributions
+ggplot(fullSummary, aes(x=medCov, fill=Sample)) + geom_density(alpha=0.5) + scale_x_log10()
+
+#SNP rate distributions
+ggplot(fullSummary, aes(x=SNPrate*100, fill=Sample)) + geom_density(alpha=0.5) + scale_x_continuous(limits = c(0,10))
+
+#Coverage vs SNP rate
+ggplot(fullSummary, aes(x=medCov, y=SNPrate*100, group=Sample)) + geom_point(alpha=0.5) + scale_x_log10() + scale_y_log10() + geom_density2d()
+
+ggplot(fullSummary, aes(x=medCov, y=SNPrate*100, col=Sample)) + geom_density2d() + scale_x_log10() + scale_y_log10()
+```
+
+```{r load_data}
+
+df004 <- read.delim('Tn004_S1_L001_v_cdhit.VarScanSNPs.tab', header=TRUE)
+df019 <- read.delim('Tn019_S2_L001_v_cdhit.VarScanSNPs.tab', header=TRUE)
+
+df004['Sample'] <- 'Tn004'
+df019['Sample'] <- 'Tn019'
+
+df <- rbind(df004, df019)
+
+df <- cbind(colsplit(df$Chrom, '\\|size', c("Chrom", "ContigLength")), df[2:20])
 
 df$VarFreq <- as.numeric(gsub('%','',df$VarFreq))
 
 df['MinorAlleleFreq'] <- ifelse(df$VarFreq <= 50, df$VarFreq, 100-df$VarFreq)
+
+df['TotalReads'] <- round(df$Reads2 / (df$VarFreq / 100), 0)
+df['otherAlleles'] <- df$TotalReads - df$Reads1 - df$Reads2
+df['otherAllelesFreq'] <- df$otherAlleles/df$TotalReads * 100
 
 ss <- subset(df, Strands1 == 2 & Strands2 == 2)
 ```
@@ -24,11 +95,12 @@ ss <- subset(df, Strands1 == 2 & Strands2 == 2)
 Summary data
 
 ```{r, summarise_data}
-av <- ddply(ss, 'Chrom', summarise, 
-            medCov=median(Reads1+Reads2),
+av <- ddply(ss, c('Sample','Chrom'), summarise, 
+            medCov=median(TotalReads),
             medVar=median(MinorAlleleFreq),
             ContigLength=mean(ContigLength),
-            totalVars=length(MinorAlleleFreq)
+            totalVars=length(MinorAlleleFreq),
+            medOtherAlleles=median(otherAllelesFreq)
             )
 
 av['SNPrate'] <- av$totalVars/av$ContigLength
@@ -37,13 +109,24 @@ av['SNPrate'] <- av$totalVars/av$ContigLength
 Summary plots
 
 ```{r, summary_plots}
-ggplot(av, aes(x=medCov)) + geom_density()
-ggplot(av, aes(x=medCov)) + geom_density() + scale_x_continuous(limits = c(0,250))
+ggplot(av, aes(x=medCov, fill=Sample)) + geom_density(alpha=0.5)
+ggplot(av, aes(x=medCov, fill=Sample)) + geom_density(alpha=0.5) + scale_x_continuous(limits = c(0,250))
 
 av.ss <- subset(av, medCov < 150)
 
-ggplot(av.ss, aes(x=SNPrate*100)) + geom_density()
-ggplot(av.ss, aes(x=medVar)) + geom_density()
+av.ss['CovGroup'] <- ifelse(av.ss$medCov > 50, 'highCov', 'lowCov')
+
+cp <- ggplot(av.ss, aes(medCov, fill=Sample)) + geom_density(alpha=0.5) + geom_vline(aes(xintercept = 50), linetype=2) + labs(x='median coverage')
+cp + annotate('text', x=c(35, 65), y=0.015, label=c('lowCov','highCov'))
+
+ggplot(av.ss, aes(x=SNPrate*100, fill=Sample)) + geom_density(alpha=0.5)
+ggplot(av.ss, aes(x=medVar, fill=Sample)) + geom_density(alpha=0.5)
+
+p <- ggplot(av.ss, aes(x=medVar, fill=Sample)) + geom_histogram(binwidth=1, alpha=0.4, position='dodge') + geom_freqpoly(aes(x=medVar, lty=CovGroup, col=Sample), binwidth=1, size=1.5)
+p + labs(x="median frequency of minor allele (%)")
+
+p2 <- ggplot(av.ss, aes(x=SNPrate*100, fill=Sample)) + geom_histogram(binwidth=0.1, alpha=0.4, position='dodge') + geom_freqpoly(aes(x=SNPrate*100, lty=CovGroup, col=Sample), binwidth=0.1, size=1) + scale_x_continuous(limits = c(0,10))
+p2 + labs(x="median SNP rate (%)")
 
 ```
 
