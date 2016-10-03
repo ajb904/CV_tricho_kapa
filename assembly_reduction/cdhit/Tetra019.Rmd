@@ -10,6 +10,7 @@ library(Biostrings)
 library(gplots)
 library(RColorBrewer)
 library(ggplot2)
+library(reshape2)
 ```
 
 ## Get fasta data
@@ -37,7 +38,7 @@ plot(as.dendrogram(cl), leaflab='none')
 
 PCA plot - how well does clustering match up with this?
 ```{r pca}
-cl.split <- cutree(cl, 5)
+cl.split <- cutree(cl, 7)
 table(cl.split)
 
 tet.pca <- prcomp(tet, center = T, scale. = T)
@@ -78,7 +79,7 @@ snpSummary['MinorAlleleFreq'] <- ifelse(snpSummary$VarFreq <= 50, snpSummary$Var
 # Merge with cluster data (keep only SNPs that are observed on both strands)
 allSNPs <- merge(subset(snpSummary, Strands1 == 2 & Strands2 == 2), clusterData, by = 'Chrom', all.x=T)
 
-ggplot(allSNPs, aes(x=medVar)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=medVar, col=as.factor(cluster)), binwidth=1, size=2)
+ggplot(allSNPs, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=as.factor(cluster)), binwidth=1, size=2)
 
 ```
 
@@ -93,7 +94,7 @@ plot(as.dendrogram(cl), leaflab='none')
 ```
 
 ```{r tetra_pca}
-cl.split <- cutree(cl, 4)
+cl.split <- cutree(cl, 5)
 table(cl.split)
 
 tet.pca <- prcomp(tet, center = T, scale. = T)
@@ -123,6 +124,6 @@ ggplot(allData, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, co
 # Merge with cluster data (keep only SNPs that are observed on both strands)
 allSNPs <- merge(subset(snpSummary, Strands1 == 2 & Strands2 == 2), clusterData, by = 'Chrom', all.x=T)
 
-ggplot(allSNPs, aes(x=medVar)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=medVar, col=as.factor(cluster)), binwidth=1, size=2)
+ggplot(allSNPs, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=as.factor(cluster)), binwidth=1, size=2)
 
 ```

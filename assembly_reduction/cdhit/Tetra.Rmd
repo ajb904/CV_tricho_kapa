@@ -10,6 +10,8 @@ library(Biostrings)
 library(gplots)
 library(RColorBrewer)
 library(ggplot2)
+library(reshape2)
+library(plyr)
 ```
 
 ## Get fasta data
@@ -78,10 +80,29 @@ snpSummary['MinorAlleleFreq'] <- ifelse(snpSummary$VarFreq <= 50, snpSummary$Var
 # Merge with cluster data (keep only SNPs that are observed on both strands)
 allSNPs <- merge(subset(snpSummary, Strands1 == 2 & Strands2 == 2), clusterData, by = 'Chrom', all.x=T)
 
-ggplot(allSNPs, aes(x=medVar)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=medVar, col=as.factor(cluster)), binwidth=1, size=2)
+ggplot(allSNPs, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=as.factor(cluster)), binwidth=1, size=2)
 
 ```
 
+```{r blast_results}
+blastTab <- read.delim('../../blast_test.tab', header=F)
+colnames(blastTab) <- c('Query', 'Hit.id', 'percentID', 'Align.length', 'mismatches', 'gaps', 'qstart', 'qend', 'sstart', 'send')
+
+blast.ss <- subset(blastTab, Align.length > 100)
+
+blast.hit.count <- ddply(blast.ss, 'Query', 'summarise',
+                         hit.count = length(percentID),
+                         av.id = mean(percentID))
+
+scores.w.blast <- merge(scores, blast.hit.count, by.x = 'rownames.tet.', by.y='Query', all.x=TRUE)
+
+scores.w.blast$hit.count[is.na(scores.w.blast$hit.count)] <- 0
+
+qplot(x=PC1, y=PC2, data=scores.w.blast, col=hit.count > 0, alpha=av.id)
+
+nohits <- names(Tn004.fasta)[!names(Tn004.fasta) %in% blast.hit.count$Query]
+writeXStringSet(Tn004.fasta[nohits], file='../../test_noHit.fasta', format = 'fasta', width=60)
+```
 
 ## Repeat using tetranucleotide frequency
 ```{r tetranucleotide_frequency}
@@ -117,14 +138,30 @@ ggplot(allData, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='blac
 
 #SNP rate distrubutions
 ggplot(allData, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, col='black') + geom_freqpoly(aes(x=SNPrate*100, col=as.factor(cluster)), binwidth=0.5, size=2) + scale_x_continuous(limits = c(0,10))
+
+
+#blast results
+blast.hit.count$Query <- gsub('\\|size[0-9]*', '', blast.hit.count$Query)
+allData.w.blast <- merge(allData, blast.hit.count, by.x='Chrom', by.y='Query', all.x=TRUE)
+allData.w.blast$hit.count[is.na(allData.w.blast$hit.count)] <- 0
+
+ggplot(allData.w.blast, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 150)) + geom_freqpoly(aes(x=medCov, col=hit.count>0), binwidth=5, size=2)
+
+ggplot(allData.w.blast, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 10)) + geom_freqpoly(aes(x=SNPrate*100, col=hit.count>0), binwidth=0.5, size=2)
+
+ggplot(allData.w.blast, aes(x=ContigLength)) + geom_histogram(alpha=0.2, col='black') + geom_freqpoly(aes(x=ContigLength, col=hit.count>0), size=2)
 ```
 
 ```{r tetra_varFreq}
 # Merge with cluster data (keep only SNPs that are observed on both strands)
 allSNPs <- merge(subset(snpSummary, Strands1 == 2 & Strands2 == 2), clusterData, by = 'Chrom', all.x=T)
 
-ggplot(allSNPs, aes(x=medVar)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=medVar, col=as.factor(cluster)), binwidth=1, size=2)
+ggplot(allSNPs, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=as.factor(cluster)), binwidth=1, size=2)
 
+allSNPs.w.blast <- merge(allSNPs, blast.hit.count, by.x='Chrom', by.y='Query', all.x=TRUE)
+allSNPs.w.blast$hit.count[is.na(allSNPs.w.blast$hit.count)] <- 0
+
+ggplot(allSNPs.w.blast, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=hit.count>0), binwidth=1, size=2)
 ```
 
 
