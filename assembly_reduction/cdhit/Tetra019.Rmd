@@ -1,7 +1,7 @@
 ---
-title: "tetranucleotide frequencies"
+title: "tetranucleotide frequencies - Tn019"
 author: "Alison Baylay"
-date: "30 September 2016"
+date: "3 October 2016"
 output: html_document
 ---
 
@@ -14,14 +14,14 @@ library(ggplot2)
 
 ## Get fasta data
 ```{r}
-Tn004.fasta <- readDNAStringSet('Tn004_S1_L001_redundans/cdhit1000.fa')
+Tn019.fasta <- readDNAStringSet('Tn019_S2_L001_redundans/cdhit1000.fa')
 ```
 
 ## Dinucleotide frequency clustering
 ```{r dinucleotide_frequency}
-tet <- oligonucleotideFrequency(Tn004.fasta, 2, as.prob = T)
+tet <- oligonucleotideFrequency(Tn019.fasta, 2, as.prob = T)
 
-rownames(tet) <- names(Tn004.fasta)
+rownames(tet) <- names(Tn019.fasta)
 
 cl <- hclust(dist(tet), method='ward.D2')
 plot(as.dendrogram(cl), leaflab='none')
@@ -30,7 +30,7 @@ plot(as.dendrogram(cl), leaflab='none')
 ```{r heatmap, fig.height=16, fig.width=8}
 #hmcol <- rev(colorRampPalette(brewer.pal(9, "YlGnBu"))(255))
 #lab.col <- colorRampPalette(brewer.pal(9, 'RdPu'))(255)
-#scaled.sizes <- trunc(width(Tn004.2kb)/max(width(Tn004.2kb))*255)
+#scaled.sizes <- trunc(width(Tn019.fasta)/max(width(Tn019.fasta))*255)
 
 #heatmap.2(tet, dendrogram = 'row', Rowv = as.dendrogram(cl), trace = 'none', labRow = '', scale='row', col=hmcol, lhei = c(0.5, 4), RowSideColors = lab.col[scaled.sizes])
 ```
@@ -43,7 +43,7 @@ table(cl.split)
 tet.pca <- prcomp(tet, center = T, scale. = T)
 plot(tet.pca, type='l')
 
-scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn004.fasta), cluster=cl.split)
+scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn019.fasta), cluster=cl.split)
 qplot(x=PC1, y=PC2, data=scores, col=as.factor(cluster))
 qplot(x=PC1, y=PC3, data=scores, col=as.factor(cluster))
 qplot(x=PC2, y=PC3, data=scores, col=as.factor(cluster))
@@ -52,10 +52,10 @@ qplot(x=PC2, y=PC3, data=scores, col=as.factor(cluster))
 Map dinucleotide frequency data onto contig coverage and SNP rate
 ```{r load_varscan_data}
 fullSummary <- read.delim('Varscan.CovSNPrate.summary.tab', header=T)
-clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn004.fasta)),
+clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn019.fasta)),
                           cluster = cl.split)
 
-allData <- merge(subset(fullSummary, Sample=='Tn004'), clusterData, by = 'Chrom', all.x=T)
+allData <- merge(subset(fullSummary, Sample=='Tn019'), clusterData, by = 'Chrom', all.x=T)
 allData[is.na(allData$cluster),'cluster'] <- 0
 
 #Coverage distributions
@@ -67,7 +67,7 @@ ggplot(allData, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, co
 
 ```{r di_varFreq}
 # Load SNP-only dataset
-snpSummary <- read.delim('Tn004_S1_L001_v_cdhit.VarScanSNPs.tab', header=T)
+snpSummary <- read.delim('Tn019_S2_L001_v_cdhit.VarScanSNPs.tab', header=T)
 
 snpSummary <- cbind(colsplit(snpSummary$Chrom, '\\|size', c("Chrom", "ContigLength")), snpSummary[2:19])
 
@@ -85,8 +85,8 @@ ggplot(allSNPs, aes(x=medVar)) + geom_histogram(binwidth=1, alpha=0.2, col='blac
 
 ## Repeat using tetranucleotide frequency
 ```{r tetranucleotide_frequency}
-tet <- oligonucleotideFrequency(Tn004.fasta, 4, as.prob = T)
-rownames(tet) <- names(Tn004.fasta)
+tet <- oligonucleotideFrequency(Tn019.fasta, 4, as.prob = T)
+rownames(tet) <- names(Tn019.fasta)
 
 cl <- hclust(dist(tet), method='ward.D2')
 plot(as.dendrogram(cl), leaflab='none')
@@ -99,17 +99,17 @@ table(cl.split)
 tet.pca <- prcomp(tet, center = T, scale. = T)
 plot(tet.pca, type='l')
 
-scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn004.fasta), cluster=cl.split)
+scores <- data.frame(rownames(tet), tet.pca$x[,1:3], length=width(Tn019.fasta), cluster=cl.split)
 qplot(x=PC1, y=PC2, data=scores, col=as.factor(cluster))
 qplot(x=PC1, y=PC3, data=scores, col=as.factor(cluster))
 qplot(x=PC2, y=PC3, data=scores, col=as.factor(cluster))
 ```
 
 ```{r tetra_varscan}
-clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn004.fasta)),
+clusterData <- data.frame(Chrom = gsub('\\|size[0-9]+', '', names(Tn019.fasta)),
                           cluster = cl.split)
 
-allData <- merge(subset(fullSummary, Sample=='Tn004'), clusterData, by = 'Chrom', all.x=T)
+allData <- merge(subset(fullSummary, Sample=='Tn019'), clusterData, by = 'Chrom', all.x=T)
 allData[is.na(allData$cluster),'cluster'] <- 0
 
 #Coverage distributions
@@ -125,10 +125,4 @@ allSNPs <- merge(subset(snpSummary, Strands1 == 2 & Strands2 == 2), clusterData,
 
 ggplot(allSNPs, aes(x=medVar)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=medVar, col=as.factor(cluster)), binwidth=1, size=2)
 
-```
-
-
-```{r get_outliers}
-#Tn004.cluster5 = Tn004.fasta[cl.split==5]
-#writeXStringSet(Tn004.cluster5, file='Tn004_odd_cluster.fasta', format = 'fasta', width=60)
 ```
