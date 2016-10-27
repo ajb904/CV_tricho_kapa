@@ -43,6 +43,9 @@ VARSCAN_EXE=java -jar $(VARSCAN_SRC)
 
 PROKKA_EXE=~/Downloads/prokka/bin/prokka
 
+COV_SUMMARY_SRC=scripts/summariseCov.R
+COV_SUMMARY_EXE=Rscript $(COV_SUMMARY_SRC)
+
 #Variables
 RAW_READS=$(wildcard $(RAW_READ_DIR)/*_001.fastq.gz)
 RAW_READ1=$(wildcard $(RAW_READ_DIR)/*_R1_001.fastq.gz)

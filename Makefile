@@ -177,18 +177,17 @@ $(CDHIT_DIR)/%_redundans/quast_comparison/report.html : $(REDUNDANS_DIR)/%_spade
 	$(QUAST_EXE) -o $(CDHIT_DIR)/$*_redundans/quast_comparison -l SPAdes,Redundans,CDHIT+Redundans -s $(REDUNDANS_DIR)/$*_spades_scaffolds.fasta $(REDUNDANS_DIR)/$*/scaffolds.filled.fa $(CDHIT_DIR)/$*_redundans/scaffolds.filled.fa
 
 
-
+#Make contig depth summary: run Varscan, keep info for every position, then summarise with R script
 .PHONY : cdhit_snp_rate
-cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanSNPs.tab $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNS.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanCNS.tab $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNSfull.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanCNSfull.tab
-
-$(CDHIT_DIR)/%_v_cdhit.VarScanSNPs.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
-	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2snp --p-value 0.01 > $@
+cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNSfull.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanCNSfull.tab $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.CovSummary.tab $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.CovSummary.tab
 
 $(CDHIT_DIR)/%_v_cdhit.VarScanCNSfull.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
 	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2cns > $@
+	
+$(CDHIT_DIR)/%_v_cdhit.CovSummary.tab : $(CDHIT_DIR)/%_v_cdhit.VarScanCNSfull.tab $(COV_SUMMARY_SRC)
+	$(COV_SUMMARY_EXE) $< $@
+	
 
-$(CDHIT_DIR)/%_v_cdhit.VarScanCNS.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
-	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2cns --variants 1 > $@
 
 
 .PHONY : cdhit_cluster_counts
@@ -212,9 +211,23 @@ $(CDHIT_DIR)/%_prokka/cdhit1000.gff : $(CDHIT_DIR)/%_redundans/cdhit1000.fa ~/Do
 	$(PROKKA_EXE) --outdir $(CDHIT_DIR)/$*_prokka --prefix cdhit1000 $< --genus T.erythraeum --usegenus --addgenes --force
 
 
+
+
+#Get SNP positions for reads vs assembly in VCF format.
+.PHONY : cdhit_snp_rate_VCF
+cdhit_snp_rate_VCF : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNS.vcf $(CDHIT_DIR)/Tn019_S2_L001_v_cdhit.VarScanCNS.vcf
+
+$(CDHIT_DIR)/%_v_cdhit.VarScanCNS.vcf : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
+	samtools mpileup -f $^ | java -jar ~/Downloads/VarScan.v2.3.9.jar mpileup2cns --output-vcf 1 --min-var-freq 0.01 --min-avg-qual 30 --variants 1 > $@
+	
+
+
 # Calculate SNP stats
+.PHONY : SNPstats
+SNPstats : SNPstats.html
 
-
+%.html : %.Rmd
+	Rscript -e "rmarkdown::render('$<')"
 
 
 
