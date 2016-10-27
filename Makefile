@@ -202,6 +202,28 @@ $(CDHIT_DIR)/cluster_counts/%.fasta : $(REDUNDANS_DIR)/%_spades_contigs.fasta
 	cp $< $@
 	
 
+# Annotate assemblies
+# 27/10/16: Use Prokka to predict coding sequences in the assembly, and annotate using a T. erythraeum protein database, followed by the Prokka default database hierarchy.
+
+.PHONY : annotate_assemblies
+annotate_assemblies : $(CDHIT_DIR)/Tn004_S1_L001_prokka/cdhit1000.gff $(CDHIT_DIR)/Tn019_S2_L001_prokka/cdhit1000.gff
+	
+$(CDHIT_DIR)/%_prokka/cdhit1000.gff : $(CDHIT_DIR)/%_redundans/cdhit1000.fa ~/Downloads/prokka/db/genus/T.erythraeum.phr
+	$(PROKKA_EXE) --outdir $(CDHIT_DIR)/$*_prokka --prefix cdhit1000 $< --genus T.erythraeum --usegenus --addgenes --force
+
+
+# Calculate SNP stats
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -224,7 +246,9 @@ assembly/idba_ud_%/scaffold.fa : $(TRIM_READ_DIR)/%_R1_trimmed.fastq.gz $(TRIM_R
 	$(ASSEMBLY_EXE) -m idba_ud -f $(TRIM_READ_DIR)/$*_R1_trimmed.fastq.gz -r $(TRIM_READ_DIR)/$*_R2_trimmed.fastq.gz -o assembly -p $*
 
 
-# Calculate stats
+
+
+
 
 
 ## Extract Tricho reads by kmer-based binning

@@ -41,6 +41,8 @@ CDHIT_CLUSTER_EXE=python $(CDHIT_CLUSTER_SRC)
 VARSCAN_SRC=~/Downloads/varscan/VarScan.v2.4.2.jar
 VARSCAN_EXE=java -jar $(VARSCAN_SRC)
 
+PROKKA_EXE=~/Downloads/prokka/bin/prokka
+
 #Variables
 RAW_READS=$(wildcard $(RAW_READ_DIR)/*_001.fastq.gz)
 RAW_READ1=$(wildcard $(RAW_READ_DIR)/*_R1_001.fastq.gz)
