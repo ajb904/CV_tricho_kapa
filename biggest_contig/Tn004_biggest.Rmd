@@ -1,0 +1,186 @@
+---
+title: "TN004_biggest"
+author: "Alison Baylay"
+date: "4 October 2016"
+output: html_document
+---
+
+```{r setup, message=FALSE}
+library(ggplot2)
+library(plyr)
+library(reshape2)
+library(data.table)
+library(zoo)
+library(GenomicRanges)
+library(GenomicFeatures)
+library(rtracklayer)
+library(VariantAnnotation)
+```
+
+VarScan command line run: ```samtools mpileup -f Tn004_biggest.fasta Tn004_v_biggest.bam | java -jar ~/Downloads/VarScan.v2.3.9.jar mpileup2cns --output-vcf 1 --min-var-freq 0.01 --min-avg-qual 30 > Tn004_v_biggest.VarScanCNS.vcf```
+
+```{r}
+##VCF filters
+# Keep only positions that passed VarScan filters (info field NC == 0)
+nc.filter <- function(x){
+    info(x)$NC == 0
+}
+
+# Keep only positions where a SNP was called (GT field PVAL < 0.01)
+pval.filter <- function(x){
+    pval <- as.numeric(geno(x)$PVAL[,1])
+    pval < 0.01
+}
+
+# Keep only positions where both the reference allele and variant allele are supported by reads on both
+# strands (GT fields RDF, RDR, ADF and ADR are all > 0)
+strand.filter <- function(x){
+    rdf <- geno(x)$RDF[,1]
+    rdr <- geno(x)$RDR[,1]
+    adf <- geno(x)$ADF[,1]
+    adr <- geno(x)$ADR[,1]
+    
+    rdf > 0 & rdr > 0 & adf > 0 & adr > 0
+}
+
+vcf.file <- 'Tn004_v_biggest.VarScanCNS.vcf.gz'
+filters = list(nc.filter, pval.filter, strand.filter)
+filt.vcf.file <- 'Tn004_v_biggest.VarScanCNS.filtSNPs.vcf.gz'
+tabix.file <- TabixFile(vcf.file, yieldSize = 10000)
+filterVcf(tabix.file, 'Tn004', filt.vcf.file, filters=FilterRules(filters), verbose = T)
+
+
+snps.vcf <- readVcf(filt.vcf.file, genome='Tn004')
+```
+
+```{r}
+#Coverage distribution
+cov <- data.frame(cov = info(snps.vcf)$ADP)
+
+ggplot(cov, aes(x=cov)) + geom_density()
+```
+
+Based on coverage distribution, filter out SNPs with coverage < 60
+
+```{r}
+snps.vcf <- snps.vcf[info(snps.vcf)$ADP > 60]
+```
+
+```{r}
+#Distribution of variant frequencies
+vf <- data.frame(FREQ = geno(snps.vcf)$FREQ[,1])
+vf$FREQ <- as.numeric(gsub('%', '', vf$FREQ))
+
+ggplot(vf, aes(x=1, y=FREQ)) + geom_boxplot() + scale_y_continuous(breaks = seq(10, 100, 10))
+ggplot(vf, aes(x=FREQ)) + geom_density()
+
+#Frequency of minor allele
+vf[,'MAF'] <- ifelse(vf$FREQ > 50, 100-vf$FREQ, vf$FREQ)
+ggplot(vf, aes(x=1, y=MAF)) + geom_boxplot() + scale_y_continuous(breaks = seq(10, 100, 10))
+ggplot(vf, aes(x=MAF)) + geom_density()
+```
+
+```{r}
+#Load annotation data from Prokka (GFF3 format) (Note: must run Prokka with --addgenes flag)
+gff <- import.gff('Tn004_prokka/Tn004_biggest.gff')
+
+#Change seqlevels to match the vcf file (and the fasta file that we will use later)
+seqlevels(gff) <- gsub('_', '\\|', seqlevels(gff))
+
+#If a gene doesn't have a gene name ('Name' and 'gene' fields are NA), set it to be the same as locus_tag
+#Gene names are required for recognition by makeTxDb.
+lt <- gff$locus_tag
+gn <- gff$Name
+gn[is.na(gn)] <- lt[is.na(gn)]
+gff$Name <- gn
+gff$gene <- gn
+
+#Make a transcript database from gff file, to use to locate coding/non-coding variants
+txdb <- makeTxDbFromGRanges(gff)
+```
+
+Table 1: Contig level data
+```{r}
+#Total amount of sequence that is coding/non-coding
+cds <- gff[gff$type == 'CDS']
+total.coding <- sum(width(reduce(ranges(cds))))
+
+contig <- FaFile('Tn004_biggest.fasta')
+total.length <- seqlengths(contig)
+
+total.noncoding <- total.length - total.coding
+
+contig.df <- data.frame(contig = seqlevels(contig),
+                        total.length = seqlengths(contig),
+                        coding.length = total.coding,
+                        intergenic.length = total.noncoding)
+
+#Locate variants: for the moment we are just interested in coding vs non-coding, so turn off promoter
+#variant prediction for simplicity
+loc <- locateVariants(snps.vcf, txdb, AllVariants(promoter = PromoterVariants(upstream=0, downstream=0)))
+
+contig.df[,'total.vars'] <- length(loc)
+contig.df[,'coding.vars'] <- sum(loc$LOCATION == 'coding')
+contig.df[,'intergenic.vars'] <- sum(loc$LOCATION == 'intergenic')
+
+contig.df[,'total.snprate'] <- contig.df$total.vars / contig.df$total.length
+contig.df[,'coding.snprate'] <- contig.df$coding.vars / contig.df$coding.length
+contig.df[,'intergenic.snprate'] <- contig.df$intergenic.vars / contig.df$intergenic.length
+```
+
+Table 2: variations per gene - coding vs noncoding
+
+```{r}
+#How many SNPs change the predicted coding sequence?
+
+pc <- predictCoding(snps.vcf, txdb, contig)
+table(pc$CONSEQUENCE)
+
+snp.by.gene <- as.data.frame(table(as.factor(seqnames(pc)), pc$GENEID, pc$CONSEQUENCE))
+colnames(snp.by.gene) <- c('contig', 'gene', 'consequence', 'freq')
+snp.by.gene <- dcast(snp.by.gene, contig + gene ~ consequence)
+
+
+snp.by.gene[,'ntLength'] <- sapply(snp.by.gene$gene, function(x) unique(width(ranges(gff)[gff$gene == x])))
+snp.by.gene[,'aaLength'] <- snp.by.gene$ntLength / 3
+
+snp.by.gene[,'CDSstart'] <- sapply(snp.by.gene$gene, function(x) unique(start(ranges(gff)[gff$gene == x])))
+snp.by.gene[,'CDSend'] <- sapply(snp.by.gene$gene, function(x) unique(end(ranges(gff)[gff$gene == x])))
+snp.by.gene[,'CDSstrand'] <- sapply(snp.by.gene$gene, function(x) unique(strand(gff[gff$gene == x])))
+```
+
+KaKs ratio calculations
+```{r}
+#Get underlying DNA sequence. Make an edited version based on the detected polymorphisms (only use SNPs for now)
+fasta <- readDNAStringSet('Tn004_biggest.fasta')
+
+is_indel <- sapply(rowRanges(snps.vcf)$REF, length) > 1 | sapply(unlist(rowRanges(snps.vcf)$ALT), length) > 1
+#Won't work if there is more than one alternate allele, but we know that VarScan only gives one ALT per position?
+no.indels <- snps.vcf[names(snps.vcf)[!is_indel]]
+rep.pos <- as.integer(ranges(no.indels))
+rep.bases <- as.character(unlist(rowRanges(no.indels)$ALT))
+
+var.fasta <- DNAStringSet(replaceLetterAt(fasta[[1]], rep.pos, rep.bases))
+names(var.fasta) <- names(fasta)
+
+#Extract sequences of 'reference' and 'mutant' CDSs
+cdsRanges <- gff[gff$type == 'CDS']
+
+cds.seqs <- getSeq(fasta, cdsRanges)
+names(cds.seqs) <- cdsRanges$gene
+
+mut.cds.seqs <- getSeq(var.fasta, cdsRanges)
+names(mut.cds.seqs) <- cdsRanges$gene
+
+#For each pair of sequences, create an alignment object (don't need to actually run an alignment algorithm), and calculate KaKs
+
+alignments <- lapply(1:length(cdsRanges), function(x) as.alignment(nb=2, nam=paste(names(cds.seqs)[x], c('mut', 'ref'), sep='_'), seq = c(as.character(cds.seqs[x]), as.character(mut.cds.seqs[x]))))
+
+kaks.data <- lapply(alignments, kaks)
+kaks.ratio <- sapply(kaks.data, function(x) x$ka / x$ks)
+names(kaks.ratio) <- names(cds.seqs)
+
+#Add KaKs data to summary data frame
+kaks.ratio <- data.frame(KaKs.ratio = kaks.ratio)
+snp.by.gene <- merge(snp.by.gene, kaks.ratio, by.x = 'gene', by.y = 'row.names')
+```

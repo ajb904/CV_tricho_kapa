@@ -150,6 +150,14 @@ ggplot(allData.w.blast, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, c
 ggplot(allData.w.blast, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 10)) + geom_freqpoly(aes(x=SNPrate*100, col=hit.count>0), binwidth=0.5, size=2)
 
 ggplot(allData.w.blast, aes(x=ContigLength)) + geom_histogram(alpha=0.2, col='black') + geom_freqpoly(aes(x=ContigLength, col=hit.count>0), size=2)
+
+#Remove cluster 4
+allData.ss <- subset(allData.w.blast, cluster!=4)
+ggplot(allData.ss, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 150)) + geom_freqpoly(aes(x=medCov, col=hit.count>0), binwidth=5, size=2)
+
+ggplot(allData.ss, aes(x=SNPrate*100)) + geom_histogram(binwidth=0.5, alpha=0.2, col='black') + scale_x_continuous(limits = c(0, 10)) + geom_freqpoly(aes(x=SNPrate*100, col=hit.count>0), binwidth=0.5, size=2)
+
+ggplot(allData.ss, aes(x=ContigLength)) + geom_histogram(alpha=0.2, col='black') + geom_freqpoly(aes(x=ContigLength, col=hit.count>0), size=2)
 ```
 
 ```{r tetra_varFreq}
@@ -162,6 +170,48 @@ allSNPs.w.blast <- merge(allSNPs, blast.hit.count, by.x='Chrom', by.y='Query', a
 allSNPs.w.blast$hit.count[is.na(allSNPs.w.blast$hit.count)] <- 0
 
 ggplot(allSNPs.w.blast, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=hit.count>0), binwidth=1, size=2)
+
+#Remove cluster 4
+allSNPs.ss <- subset(allSNPs.w.blast, cluster != 4)
+ggplot(allSNPs.ss, aes(x=MinorAlleleFreq)) + geom_histogram(binwidth=1, alpha=0.2, col='black') + geom_freqpoly(aes(x=MinorAlleleFreq, col=hit.count>0), binwidth=1, size=2)
+```
+
+```{r megan_assignment}
+megan.csv <- '../../test_last/Tn004_v_refseq_microbial_last_RNtoTxN.csv'
+
+megan.data <- read.csv(megan.csv, header=F, stringsAsFactors = F)
+colnames(megan.data) <- c('Chrom', 'tax')
+megan.data$Chrom <- gsub('\\|size[0-9]+', '', megan.data$Chrom)
+
+allData.w.megan <- merge(allData, megan.data, by='Chrom', all.x=TRUE)
+allData.w.megan$tax[is.na(allData.w.megan$tax)] <- 'No LAST hits'
+
+unassigned.list <- c('No LAST hits', 'Not assigned')
+
+allData.w.megan[,'Assigned'] <- !(allData.w.megan$tax %in% unassigned.list)
+
+allData.w.megan[,'simple.tax'] <- NA
+allData.w.megan$simple.tax[allData.w.megan$tax %in% unassigned.list] <- 'Unassigned'
+allData.w.megan$simple.tax[allData.w.megan$tax == 'Trichodesmium erythraeum'] <- 'Trichodesmium erythraeum'
+
+other.oscillatoriales <- c('Arthrospira', 'Crinalium', 'Geitlerinema', 'Kamptonema', 'Leptolyngbya', 'Limnoraphis', 'Lyngbya', 'Microcoleus', 'Moorea', 'Oscillatoria', 'Planktothricoides', 'Planktothrix', 'Pseudanabaena', 'Spirulina', 'unclassified Oscillatoriales')
+other.cyanos <- c('Nostocales', 'Chroococcales',  'Pleurocapsales', 'Stigonematales', 'unclassified Cyanobacteria')
+undefined.cyanos <- c('Cyanobacteria', 'Oscillatoriophycideae', 'Oscillatoriales')
+
+allData.w.megan$simple.tax[allData.w.megan$tax %in% other.oscillatoriales] <- 'Other Oscillatoriales'
+allData.w.megan$simple.tax[allData.w.megan$tax %in% other.cyanos] <- 'Other Cyanobacteria'
+allData.w.megan$simple.tax[allData.w.megan$tax %in% undefined.cyanos] <- 'Undefined Cyanobacteria'
+
+undefined.bact <- c('Bacteria', 'Terrabacteria group')
+other <- c('Euryarchaeota', 'cellular organisms')
+
+allData.w.megan$simple.tax[allData.w.megan$tax %in% undefined.bact] <- 'Undefined Bacteria'
+allData.w.megan$simple.tax[allData.w.megan$tax %in% other] <- 'Other organisms'
+allData.w.megan$simple.tax[is.na(allData.w.megan$simple.tax)] <- 'Other Bacteria'
+
+ggplot(allData.w.megan, aes(x=medCov)) + geom_histogram(binwidth=5, alpha=0.2, col='black') + geom_freqpoly(aes(x=medCov, col=Assigned), binwidth=5, size=2) + scale_x_continuous(limits = c(0, 150))
+
+allData.w.megan[,'v.simple.tax'] <- sapply(allData.w.megan$simple.tax, function(x) unlist(strsplit(x, ' '))[1])
 ```
 
 
