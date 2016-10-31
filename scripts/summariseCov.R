@@ -20,8 +20,10 @@ fullSummary <- ddply(full.data, 'Chrom', summarise,
                      lqCov = quantile(Reads1+Reads2, 0.25), 
                      uqCov = quantile(Reads1+Reads2, 0.75),
                      minCov = min(Reads1+Reads2),
-                     maxCov = max(Reads1+Reads2))
+                     maxCov = max(Reads1+Reads2),
+                     highCovPos = sum(Reads1+Reads2 > 250),
+                     lowCovPos = sum(Reads1+Reads2 < 10))
 
-fullSummary <- cbind(Sample=fullSummary[,1], colsplit(fullSummary$Chrom, '\\|size', c('Chrom','ContigLength')), fullSummary[,2:8])
+fullSummary <- cbind(colsplit(fullSummary$Chrom, '\\|size', c('Chrom','ContigLength')), fullSummary[,2:8])
 
 write.table(fullSummary, file = outfile, quote=F, row.names = F, col.names = T, sep='\t')
