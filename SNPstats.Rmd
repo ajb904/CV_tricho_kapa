@@ -1,0 +1,135 @@
+---
+title: "SNP stats from Tricho assemblies"
+author: "Alison Baylay"
+date: "27 October 2016"
+output: html_document
+---
+
+```{r setup, message=FALSE}
+library(ggplot2)
+library(plyr)
+library(reshape2)
+library(data.table)
+library(sqldf)
+library(zoo)
+library(GenomicRanges)
+library(GenomicFeatures)
+library(rtracklayer)
+library(VariantAnnotation)
+```
+
+Input files:
+
+```{r}
+analysis.dir <- 'assembly_reduction/cdhit/'
+sample <- 'Tn004_S1_L001'
+full.data.file <- paste(analysis.dir, sample, '_v_cdhit.VarScanCNSfull.tab', sep='')
+vcf.file <- paste(analysis.dir, sample, '_v_cdhit.VarScanCNS.vcf', sep='')
+cov.file <- paste(analysis.dir, sample, '_v_cdhit.CovSummary.tab', sep='')
+gff.file <- paste(analysis.dir, sample, '_prokka/cdhit1000.gff', sep='')
+
+snps.vcf <- readVcf(vcf.file, genome=sample)
+cov.data <- read.delim(cov.file)
+gff <- import.gff(gff.file)
+#Change seqlevels to match the vcf file (and the fasta file that we will use later)
+seqlevels(gff) <- gsub('_', '\\|', seqlevels(gff))
+
+```
+
+Plot coverage distribution, and filter VCF. We want to remove SNPs with extreme coverage depths, and also those that are only observed on one strand
+
+```{r cov_plot}
+ggplot(cov.data, aes(x=medCov)) + geom_histogram(binwidth = 10)
+
+ssCov <- subset(cov.data, medCov < 250 & medCov >=10)
+ggplot(ssCov, aes(x=medCov)) + geom_histogram(binwidth = 5)
+```
+
+Plot per contig coverage distributions for some randomly selected contigs and check the effect of filtering positions where coverage is >1 s.d. from the mean. If this works, we can use it to filter out low coverage mutations from the main dataset.
+
+```{r, fig.height=20}
+set.seed(10)
+large=subset(ssCov, ContigLength > 5000)
+to.check <- sample(as.character(large$Chrom), 24)
+ss <- subset(large, Chrom %in% to.check)
+
+contig.names <- paste(ss$Chrom, '|size', ss$ContigLength, sep = '')
+
+sql <- paste("SELECT Chrom,Position,Reads1,Reads2 FROM file WHERE Chrom IN ( '", paste(contig.names, collapse = "', '"), "')", sep = '')
+
+pc.cov <- read.csv.sql(full.data.file, sql = sql, header = TRUE, sep='\t')
+pc.cov <- cbind(contig.name=pc.cov[,1], colsplit(pc.cov$Chrom, '\\|size', names=c('Chrom', 'ContigLength')), pc.cov[,2:4])
+
+pc.cov.m <- merge(pc.cov, ss, by='Chrom')
+
+ggplot(pc.cov.m, aes(x=Reads1+Reads2)) + geom_density() + geom_vline(aes(xintercept = meanCov),col='red') + geom_vline(aes(xintercept = meanCov-sdCov), col='blue', linetype=2) + geom_vline(aes(xintercept = meanCov+sdCov), col='blue', linetype=2) + geom_vline(aes(xintercept=medCov), col='purple', linetype=3) + facet_wrap(~ contig.name, ncol=3, scales = 'free')
+```
+
+Naive coverage based filtering:
+1) Throw out all CONTIGS with median coverage > 250 or < 10
+2) Deal with high coverage POSITIONS at a later stage
+
+```{r}
+contigs.to.keep <- contig.names <- paste(ssCov$Chrom, '|size', ssCov$ContigLength, sep = '')
+snps.vcf <- snps.vcf[seqnames(snps.vcf) %in% contigs.to.keep]
+```
+
+Plot overall SNP coverage distribution
+
+```{r}
+adp <- data.frame(adp = info(snps.vcf)$ADP)
+ggplot(adp, aes(x=adp)) + geom_density()
+
+table(adp$adp > 250)
+```
+
+Make txdb object from gff file
+```{r}
+#If a gene doesn't have a gene name ('Name' and 'gene' fields are NA), set it to be the same as locus_tag
+#Gene names are required for recognition by makeTxDb.
+lt <- gff$locus_tag
+gn <- gff$Name
+gn[is.na(gn)] <- lt[is.na(gn)]
+gff$Name <- gn
+gff$gene <- gn
+
+#Make a transcript database from gff file, to use to locate coding/non-coding variants
+txdb <- makeTxDbFromGRanges(gff)
+```
+
+Table 1: Contig level data
+```{r}
+contig.data <- data.frame(Chrom=ssCov$Chrom, ContigLength=ssCov$ContigLength)
+contig.data['seqname'] <- paste(contig.data$Chrom, '|size', contig.data$ContigLength, sep = '')
+
+#Total amount of sequence that is coding/non-coding
+cds.data <- gff[gff$type == 'CDS']
+contig.data[,'total.coding'] <- sapply(contig.data$seqname,
+                                       function(x) sum(width(reduce(ranges(cds.data[seqnames(cds.data)==x])))))
+
+contig.data[,'total.noncoding'] <- contig.data$ContigLength - contig.data$total.coding
+
+contig.data[,'coding.percent'] <- contig.data$total.coding/contig.data$ContigLength * 100
+
+#Amount of sequence encoding tRNAs
+tRNA.data <- gff[gff$type == 'tRNA']
+contig.data[,'total.tRNA'] <- sapply(contig.data$seqname,
+                                     function(x) sum(width(reduce(ranges(tRNA.data[seqnames(tRNA.data)==x])))))
+
+
+
+#Locate variants: for the moment we are just interested in coding vs non-coding, so turn off promoter
+#variant prediction for simplicity
+loc <- locateVariants(snps.vcf, txdb, AllVariants(promoter = PromoterVariants(upstream=0, downstream=0)))
+
+loc.summary <- ddply(as.data.frame(loc), 'seqnames', 'summarise',
+                     coding.vars=sum(LOCATION=='coding'),
+                     intergenic.vars=sum(LOCATION=='intergenic'))
+
+contig.data <- merge(contig.data, loc.summary, by.x='seqname', by.y='seqnames', all.x=TRUE)
+contig.data[,'total.vars'] <- contig.data$coding.vars + contig.data$intergenic.vars
+
+contig.data[,'total.snprate'] <- contig.data$total.vars / contig.data$ContigLength
+contig.data[,'coding.snprate'] <- contig.data$coding.vars / contig.data$ContigLength
+contig.data[,'intergenic.snprate'] <- contig.data$intergenic.vars / contig.data$ContigLength
+```

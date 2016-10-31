@@ -24,6 +24,6 @@ fullSummary <- ddply(full.data, 'Chrom', summarise,
                      highCovPos = sum(Reads1+Reads2 > 250),
                      lowCovPos = sum(Reads1+Reads2 < 10))
 
-fullSummary <- cbind(colsplit(fullSummary$Chrom, '\\|size', c('Chrom','ContigLength')), fullSummary[,2:8])
+fullSummary <- cbind(colsplit(fullSummary$Chrom, '\\|size', c('Chrom','ContigLength')), fullSummary[,2:10])
 
 write.table(fullSummary, file = outfile, quote=F, row.names = F, col.names = T, sep='\t')
