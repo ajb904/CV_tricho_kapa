@@ -127,9 +127,11 @@ loc.summary <- ddply(as.data.frame(loc), 'seqnames', 'summarise',
                      intergenic.vars=sum(LOCATION=='intergenic'))
 
 contig.data <- merge(contig.data, loc.summary, by.x='seqname', by.y='seqnames', all.x=TRUE)
+contig.data$coding.vars[is.na(contig.data$coding.vars)] <- 0
+contig.data$intergenic.vars[is.na(contig.data$intergenic.vars)] <- 0
 contig.data[,'total.vars'] <- contig.data$coding.vars + contig.data$intergenic.vars
 
 contig.data[,'total.snprate'] <- contig.data$total.vars / contig.data$ContigLength
-contig.data[,'coding.snprate'] <- contig.data$coding.vars / contig.data$ContigLength
-contig.data[,'intergenic.snprate'] <- contig.data$intergenic.vars / contig.data$ContigLength
+contig.data[,'coding.snprate'] <- contig.data$coding.vars / contig.data$total.coding
+contig.data[,'intergenic.snprate'] <- contig.data$intergenic.vars / contig.data$total.noncoding
 ```
