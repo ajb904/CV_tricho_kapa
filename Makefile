@@ -184,8 +184,8 @@ cdhit_snp_rate : $(CDHIT_DIR)/Tn004_S1_L001_v_cdhit.VarScanCNSfull.tab $(CDHIT_D
 $(CDHIT_DIR)/%_v_cdhit.VarScanCNSfull.tab : $(CDHIT_DIR)/%_redundans/cdhit1000.fa $(CDHIT_DIR)/%_v_cdhit.bam
 	samtools mpileup -f $^ | $(VARSCAN_EXE) pileup2cns > $@
 	
-$(CDHIT_DIR)/%_v_cdhit.CovSummary.tab : $(CDHIT_DIR)/%_v_cdhit.VarScanCNSfull.tab $(COV_SUMMARY_SRC)
-	$(COV_SUMMARY_EXE) $< $@
+$(CDHIT_DIR)/%_v_cdhit.CovSummary.tab : $(CDHIT_DIR)/%_v_cdhit.VarScanCNSfull.tab $(COV_SUMMARY_SRC) $(CDHIT_DIR)/%_redundans/cdhit1000.fa
+	$(COV_SUMMARY_EXE) $< $@ $(CDHIT_DIR)/$*_redundans/cdhit1000.fa
 	
 
 
