@@ -16,6 +16,7 @@ library(GenomicRanges)
 library(GenomicFeatures)
 library(rtracklayer)
 library(VariantAnnotation)
+library(seqinr)
 ```
 
 Input files:
@@ -27,12 +28,17 @@ full.data.file <- paste(analysis.dir, sample, '_v_cdhit.VarScanCNSfull.tab', sep
 vcf.file <- paste(analysis.dir, sample, '_v_cdhit.VarScanCNS.vcf', sep='')
 cov.file <- paste(analysis.dir, sample, '_v_cdhit.CovSummary.tab', sep='')
 gff.file <- paste(analysis.dir, sample, '_prokka/cdhit1000.gff', sep='')
+fasta.file <- paste(analysis.dir, sample, '_redundans/cdhit1000.fa', sep='')
 
 snps.vcf <- readVcf(vcf.file, genome=sample)
 cov.data <- read.delim(cov.file)
 gff <- import.gff(gff.file)
 #Change seqlevels to match the vcf file (and the fasta file that we will use later)
 seqlevels(gff) <- gsub('_', '\\|', seqlevels(gff))
+
+#Output files
+contig.data.file <- paste(analysis.dir, sample, 'contigData.csv', sep='')
+CDS.data.file <- paste(analysis.dir, sample, 'CDSData.csv', sep='')
 
 ```
 
@@ -41,7 +47,8 @@ Plot coverage distribution, and filter VCF. We want to remove SNPs with extreme 
 ```{r cov_plot}
 ggplot(cov.data, aes(x=medCov)) + geom_histogram(binwidth = 10)
 
-ssCov <- subset(cov.data, medCov < 250 & medCov >=10)
+ssCov <- subset(cov.data, medCov < 120 & medCov >=10)
+ssCov <- droplevels(ssCov)
 ggplot(ssCov, aes(x=medCov)) + geom_histogram(binwidth = 5)
 ```
 
@@ -49,29 +56,37 @@ Plot per contig coverage distributions for some randomly selected contigs and ch
 
 ```{r, fig.height=20}
 set.seed(10)
-large=subset(ssCov, ContigLength > 5000)
-to.check <- sample(as.character(large$Chrom), 24)
-ss <- subset(large, Chrom %in% to.check)
+to.check <- sample(as.character(ssCov$Chrom), 24)
+ss <- subset(ssCov, Chrom %in% to.check)
 
-contig.names <- paste(ss$Chrom, '|size', ss$ContigLength, sep = '')
-
-sql <- paste("SELECT Chrom,Position,Reads1,Reads2 FROM file WHERE Chrom IN ( '", paste(contig.names, collapse = "', '"), "')", sep = '')
+sql <- paste("SELECT Chrom,Position,Reads1,Reads2 FROM file WHERE Chrom IN ( '", paste(ss$Chrom, collapse = "', '"), "')", sep = '')
 
 pc.cov <- read.csv.sql(full.data.file, sql = sql, header = TRUE, sep='\t')
-pc.cov <- cbind(contig.name=pc.cov[,1], colsplit(pc.cov$Chrom, '\\|size', names=c('Chrom', 'ContigLength')), pc.cov[,2:4])
 
 pc.cov.m <- merge(pc.cov, ss, by='Chrom')
 
-ggplot(pc.cov.m, aes(x=Reads1+Reads2)) + geom_density() + geom_vline(aes(xintercept = meanCov),col='red') + geom_vline(aes(xintercept = meanCov-sdCov), col='blue', linetype=2) + geom_vline(aes(xintercept = meanCov+sdCov), col='blue', linetype=2) + geom_vline(aes(xintercept=medCov), col='purple', linetype=3) + facet_wrap(~ contig.name, ncol=3, scales = 'free')
+ggplot(pc.cov.m, aes(x=Reads1+Reads2)) + geom_density() + geom_vline(aes(xintercept = meanCov),col='red') + geom_vline(aes(xintercept = meanCov-sdCov), col='blue', linetype=2) + geom_vline(aes(xintercept = meanCov+sdCov), col='blue', linetype=2) + geom_vline(aes(xintercept=medCov), col='purple', linetype=3) + facet_wrap(~ Chrom, ncol=3, scales = 'free')
 ```
 
 Naive coverage based filtering:
-1) Throw out all CONTIGS with median coverage > 250 or < 10
+1) Throw out all CONTIGS with median coverage > 120 or < 10
 2) Deal with high coverage POSITIONS at a later stage
 
 ```{r}
-contigs.to.keep <- contig.names <- paste(ssCov$Chrom, '|size', ssCov$ContigLength, sep = '')
-snps.vcf <- snps.vcf[seqnames(snps.vcf) %in% contigs.to.keep]
+snps.vcf <- snps.vcf[seqnames(snps.vcf) %in% ssCov$Chrom]
+```
+
+Strand-based filtering:
+Only keep vars that are observed in at least 2 reads on both strands (GT fields RDF, RDR, ADF and ADR are all > 1)
+
+```{r}
+strand.df <- data.frame(rdf <- geno(snps.vcf)$RDF[,1],
+                        rdr <- geno(snps.vcf)$RDR[,1],
+                        adf <- geno(snps.vcf)$ADF[,1],
+                        adr <- geno(snps.vcf)$ADR[,1])
+to.keep <- subset(strand.df, rdf > 1 & rdr > 1 & adf > 1 & adr > 1)
+
+snps.vcf <- snps.vcf[rownames(to.keep)]
 ```
 
 Plot overall SNP coverage distribution
@@ -100,11 +115,10 @@ txdb <- makeTxDbFromGRanges(gff)
 Table 1: Contig level data
 ```{r}
 contig.data <- data.frame(Chrom=ssCov$Chrom, ContigLength=ssCov$ContigLength)
-contig.data['seqname'] <- paste(contig.data$Chrom, '|size', contig.data$ContigLength, sep = '')
 
 #Total amount of sequence that is coding/non-coding
 cds.data <- gff[gff$type == 'CDS']
-contig.data[,'total.coding'] <- sapply(contig.data$seqname,
+contig.data[,'total.coding'] <- sapply(as.character(contig.data$Chrom),
                                        function(x) sum(width(reduce(ranges(cds.data[seqnames(cds.data)==x])))))
 
 contig.data[,'total.noncoding'] <- contig.data$ContigLength - contig.data$total.coding
@@ -113,7 +127,7 @@ contig.data[,'coding.percent'] <- contig.data$total.coding/contig.data$ContigLen
 
 #Amount of sequence encoding tRNAs
 tRNA.data <- gff[gff$type == 'tRNA']
-contig.data[,'total.tRNA'] <- sapply(contig.data$seqname,
+contig.data[,'total.tRNA'] <- sapply(as.character(contig.data$Chrom),
                                      function(x) sum(width(reduce(ranges(tRNA.data[seqnames(tRNA.data)==x])))))
 
 
@@ -126,7 +140,7 @@ loc.summary <- ddply(as.data.frame(loc), 'seqnames', 'summarise',
                      coding.vars=sum(LOCATION=='coding'),
                      intergenic.vars=sum(LOCATION=='intergenic'))
 
-contig.data <- merge(contig.data, loc.summary, by.x='seqname', by.y='seqnames', all.x=TRUE)
+contig.data <- merge(contig.data, loc.summary, by.x='Chrom', by.y='seqnames', all.x=TRUE)
 contig.data$coding.vars[is.na(contig.data$coding.vars)] <- 0
 contig.data$intergenic.vars[is.na(contig.data$intergenic.vars)] <- 0
 contig.data[,'total.vars'] <- contig.data$coding.vars + contig.data$intergenic.vars
@@ -134,4 +148,101 @@ contig.data[,'total.vars'] <- contig.data$coding.vars + contig.data$intergenic.v
 contig.data[,'total.snprate'] <- contig.data$total.vars / contig.data$ContigLength
 contig.data[,'coding.snprate'] <- contig.data$coding.vars / contig.data$total.coding
 contig.data[,'intergenic.snprate'] <- contig.data$intergenic.vars / contig.data$total.noncoding
+
+#Add in coverage data to complete contig-level table
+contig.data.full <- merge(contig.data, ssCov, by='Chrom')
+
+write.csv(contig.data.full, file=contig.data.file, quote=F, row.names = F)
+```
+
+Table 2: CDS-level data
+
+```{r}
+#How many SNPs change the predicted coding sequence?
+seqs <- FaFile(fasta.file, index = paste(fasta.file, '.fai', sep=''))
+coding.snps <- snps.vcf[!(names(snps.vcf) %in% names(loc)[loc$LOCATION=='intergenic'])]
+seqlevels(coding.snps) <- seqlevels(seqs)
+
+pc <- predictCoding(coding.snps, txdb, seqs)
+table(pc$CONSEQUENCE)
+
+pc.df <- data.frame(Chrom=seqnames(pc), GeneID=pc$GENEID, Consequence=pc$CONSEQUENCE)
+
+snp.by.gene <- ddply(pc.df, c('Chrom', 'GeneID', 'Consequence'), summarize, freq=length(Consequence))
+snp.by.gene <- dcast(snp.by.gene, Chrom + GeneID ~ Consequence)
+snp.by.gene[is.na(snp.by.gene)] <- 0
+
+#GeneIDs should be unique?
+length(unique(snp.by.gene$GeneID)) == length(unique(paste(snp.by.gene$Chrom, snp.by.gene$GeneID)))
+
+cds.summary <- data.frame(GeneID = cds.data$gene,
+                          CDSstart=start(ranges(cds.data)),
+                          CDSend=end(ranges(cds.data)),
+                          CDSstrand=strand(cds.data),
+                          ntLength = width(ranges(cds.data)))
+
+snp.by.gene <- merge(snp.by.gene, cds.summary, by='GeneID', sort=FALSE)
+
+snp.by.gene[,'aaLength'] <- snp.by.gene$ntLength / 3
+
+#Save CDS data
+write.csv(snp.by.gene, file=CDS.data.file, quote=F, row.names = F)
+
+```
+
+KaKs ratio calculations
+```{r}
+#Get underlying DNA sequence. Make an edited version based on the detected polymorphisms (only use SNPs for now)
+fasta <- readDNAStringSet(fasta.file)
+
+#Extend pc.df to include ref and var alleles, and the CDS position
+pc.df[,'REF'] <- pc$REF
+pc.df[,'ALT'] <- unlist(pc$ALT)
+pc.df[,'CDSstart'] <- start(pc$CDSLOC)
+pc.df[,'CDSend'] <- end(pc$CDSLOC)
+pc.df[,'Strand'] <- strand(pc)
+pc.df[,'VarAllele'] <- pc$varAllele
+
+
+#Keep only SNPs
+pc.df.snps <- subset(pc.df, Consequence %in% c('nonsynonymous', 'synonymous') & (nchar(REF) == 1 & nchar(ALT)==1))
+
+
+#Get CDS seqs from fasta file
+cds.seqs <- getSeq(fasta, cds.data)
+names(cds.seqs) <- cds.data$gene
+
+
+#Make mutated CDS sequences
+mutateSeq <- function(seq.name, seq.set, snp.df){
+    seq.to.mutate <- seq.set[seq.name][[1]]
+    positions <- as.integer(snp.df$CDSstart[snp.df$GeneID == seq.name])
+    replacements <- as.character(snp.df$VarAllele[snp.df$GeneID == seq.name])
+    
+    mutated.seq <- replaceLetterAt(seq.to.mutate, positions, replacements)
+    
+    return(mutated.seq)
+}
+
+seqs.to.mutate <- unique(pc.df.snps$GeneID)
+mut.cds.seqs <- DNAStringSet( sapply(seqs.to.mutate, function(x) mutateSeq(x, cds.seqs, pc.df.snps)) )
+names(mut.cds.seqs) <- seqs.to.mutate
+
+
+
+#For each pair of sequences, create an alignment object (don't need to actually run an alignment algorithm), and calculate KaKs
+
+alignments <- lapply(names(mut.cds.seqs), function(x) as.alignment(nb=2, nam=paste(x, c('ref', 'mut'), sep='_'), seq = c(as.character(cds.seqs[x]), as.character(mut.cds.seqs[x]))))
+
+kaks.data <- lapply(alignments, kaks)
+ka <- sapply(kaks.data, function(x) x$ka)
+ka[ka <= 0 | ka == 10] <- NA
+ks <- sapply(kaks.data, function(x) x$ks)
+ks[ks <= 0 | ks == 10] <- NA
+kaks.ratio.df <- data.frame(seq = names(mut.cds.seqs), ka = ka, ks = ks)
+kaks.ratio.df[,'kaks.ratio'] <- with(kaks.ratio.df, ka/ks)
+
+
+#Add KaKs data to summary data frame
+snp.by.gene <- merge(snp.by.gene, kaks.ratio.df, by.x = 'GeneID', by.y = 'seq')
 ```
