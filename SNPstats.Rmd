@@ -16,6 +16,7 @@ library(GenomicRanges)
 library(GenomicFeatures)
 library(rtracklayer)
 library(VariantAnnotation)
+library(seqinr)
 ```
 
 Input files:
@@ -199,10 +200,12 @@ pc.df[,'REF'] <- pc$REF
 pc.df[,'ALT'] <- unlist(pc$ALT)
 pc.df[,'CDSstart'] <- start(pc$CDSLOC)
 pc.df[,'CDSend'] <- end(pc$CDSLOC)
+pc.df[,'Strand'] <- strand(pc)
+pc.df[,'VarAllele'] <- pc$varAllele
 
 
 #Keep only SNPs
-pc.df.snps <- subset(pc.df, nchar(REF) == 1 & nchar(ALT) == 1)
+pc.df.snps <- subset(pc.df, Consequence %in% c('nonsynonymous', 'synonymous') & (nchar(REF) == 1 & nchar(ALT)==1))
 
 
 #Get CDS seqs from fasta file
@@ -214,7 +217,7 @@ names(cds.seqs) <- cds.data$gene
 mutateSeq <- function(seq.name, seq.set, snp.df){
     seq.to.mutate <- seq.set[seq.name][[1]]
     positions <- as.integer(snp.df$CDSstart[snp.df$GeneID == seq.name])
-    replacements <- as.character(snp.df$ALT[snp.df$GeneID == seq.name])
+    replacements <- as.character(snp.df$VarAllele[snp.df$GeneID == seq.name])
     
     mutated.seq <- replaceLetterAt(seq.to.mutate, positions, replacements)
     
@@ -222,27 +225,24 @@ mutateSeq <- function(seq.name, seq.set, snp.df){
 }
 
 seqs.to.mutate <- unique(pc.df.snps$GeneID)
-var.fasta <- sapply(seqs.to.mutate, function(x) mutateSeq(x, cds.seqs, pc.df.snps))
-names(var.fasta) <- seqs.to.mutate
+mut.cds.seqs <- DNAStringSet( sapply(seqs.to.mutate, function(x) mutateSeq(x, cds.seqs, pc.df.snps)) )
+names(mut.cds.seqs) <- seqs.to.mutate
 
-#Extract sequences of 'reference' and 'mutant' CDSs
-cdsRanges <- gff[gff$type == 'CDS']
 
-cds.seqs <- getSeq(fasta, cdsRanges)
-names(cds.seqs) <- cdsRanges$gene
-
-mut.cds.seqs <- getSeq(var.fasta, cdsRanges)
-names(mut.cds.seqs) <- cdsRanges$gene
 
 #For each pair of sequences, create an alignment object (don't need to actually run an alignment algorithm), and calculate KaKs
 
-alignments <- lapply(1:length(cdsRanges), function(x) as.alignment(nb=2, nam=paste(names(cds.seqs)[x], c('mut', 'ref'), sep='_'), seq = c(as.character(cds.seqs[x]), as.character(mut.cds.seqs[x]))))
+alignments <- lapply(names(mut.cds.seqs), function(x) as.alignment(nb=2, nam=paste(x, c('ref', 'mut'), sep='_'), seq = c(as.character(cds.seqs[x]), as.character(mut.cds.seqs[x]))))
 
 kaks.data <- lapply(alignments, kaks)
-kaks.ratio <- sapply(kaks.data, function(x) x$ka / x$ks)
-names(kaks.ratio) <- names(cds.seqs)
+ka <- sapply(kaks.data, function(x) x$ka)
+ka[ka <= 0 | ka == 10] <- NA
+ks <- sapply(kaks.data, function(x) x$ks)
+ks[ks <= 0 | ks == 10] <- NA
+kaks.ratio.df <- data.frame(seq = names(mut.cds.seqs), ka = ka, ks = ks)
+kaks.ratio.df[,'kaks.ratio'] <- with(kaks.ratio.df, ka/ks)
+
 
 #Add KaKs data to summary data frame
-kaks.ratio <- data.frame(KaKs.ratio = kaks.ratio)
-snp.by.gene <- merge(snp.by.gene, kaks.ratio, by.x = 'gene', by.y = 'row.names')
+snp.by.gene <- merge(snp.by.gene, kaks.ratio.df, by.x = 'GeneID', by.y = 'seq')
 ```
