@@ -35,7 +35,9 @@ gff <- import.gff(gff.file)
 #Change seqlevels to match the vcf file (and the fasta file that we will use later)
 seqlevels(gff) <- gsub('_', '\\|', seqlevels(gff))
 
-contig.data.file <- paste(analysis.dir, sample, 'contigData.csv')
+#Output files
+contig.data.file <- paste(analysis.dir, sample, 'contigData.csv', sep='')
+CDS.data.file <- paste(analysis.dir, sample, 'CDSData.csv', sep='')
 
 ```
 
@@ -167,6 +169,7 @@ pc.df <- data.frame(Chrom=seqnames(pc), GeneID=pc$GENEID, Consequence=pc$CONSEQU
 
 snp.by.gene <- ddply(pc.df, c('Chrom', 'GeneID', 'Consequence'), summarize, freq=length(Consequence))
 snp.by.gene <- dcast(snp.by.gene, Chrom + GeneID ~ Consequence)
+snp.by.gene[is.na(snp.by.gene)] <- 0
 
 #GeneIDs should be unique?
 length(unique(snp.by.gene$GeneID)) == length(unique(paste(snp.by.gene$Chrom, snp.by.gene$GeneID)))
@@ -179,5 +182,67 @@ cds.summary <- data.frame(GeneID = cds.data$gene,
 
 snp.by.gene <- merge(snp.by.gene, cds.summary, by='GeneID', sort=FALSE)
 
+snp.by.gene[,'aaLength'] <- snp.by.gene$ntLength / 3
 
+#Save CDS data
+write.csv(snp.by.gene, file=CDS.data.file, quote=F, row.names = F)
+
+```
+
+KaKs ratio calculations
+```{r}
+#Get underlying DNA sequence. Make an edited version based on the detected polymorphisms (only use SNPs for now)
+fasta <- readDNAStringSet(fasta.file)
+
+#Extend pc.df to include ref and var alleles, and the CDS position
+pc.df[,'REF'] <- pc$REF
+pc.df[,'ALT'] <- unlist(pc$ALT)
+pc.df[,'CDSstart'] <- start(pc$CDSLOC)
+pc.df[,'CDSend'] <- end(pc$CDSLOC)
+
+
+#Keep only SNPs
+pc.df.snps <- subset(pc.df, nchar(REF) == 1 & nchar(ALT) == 1)
+
+
+#Get CDS seqs from fasta file
+cds.seqs <- getSeq(fasta, cds.data)
+names(cds.seqs) <- cds.data$gene
+
+
+#Make mutated CDS sequences
+mutateSeq <- function(seq.name, seq.set, snp.df){
+    seq.to.mutate <- seq.set[seq.name][[1]]
+    positions <- as.integer(snp.df$CDSstart[snp.df$GeneID == seq.name])
+    replacements <- as.character(snp.df$ALT[snp.df$GeneID == seq.name])
+    
+    mutated.seq <- replaceLetterAt(seq.to.mutate, positions, replacements)
+    
+    return(mutated.seq)
+}
+
+seqs.to.mutate <- unique(pc.df.snps$GeneID)
+var.fasta <- sapply(seqs.to.mutate, function(x) mutateSeq(x, cds.seqs, pc.df.snps))
+names(var.fasta) <- seqs.to.mutate
+
+#Extract sequences of 'reference' and 'mutant' CDSs
+cdsRanges <- gff[gff$type == 'CDS']
+
+cds.seqs <- getSeq(fasta, cdsRanges)
+names(cds.seqs) <- cdsRanges$gene
+
+mut.cds.seqs <- getSeq(var.fasta, cdsRanges)
+names(mut.cds.seqs) <- cdsRanges$gene
+
+#For each pair of sequences, create an alignment object (don't need to actually run an alignment algorithm), and calculate KaKs
+
+alignments <- lapply(1:length(cdsRanges), function(x) as.alignment(nb=2, nam=paste(names(cds.seqs)[x], c('mut', 'ref'), sep='_'), seq = c(as.character(cds.seqs[x]), as.character(mut.cds.seqs[x]))))
+
+kaks.data <- lapply(alignments, kaks)
+kaks.ratio <- sapply(kaks.data, function(x) x$ka / x$ks)
+names(kaks.ratio) <- names(cds.seqs)
+
+#Add KaKs data to summary data frame
+kaks.ratio <- data.frame(KaKs.ratio = kaks.ratio)
+snp.by.gene <- merge(snp.by.gene, kaks.ratio, by.x = 'gene', by.y = 'row.names')
 ```
